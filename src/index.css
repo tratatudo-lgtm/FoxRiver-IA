@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #E8511A;
+  --color-brand-hover: #D44415;
+  --color-dashboard-bg: #0A0A0B;
+  --color-card-bg: #161618;
+  --color-card-border: #26262A;
+}
+
+@layer base {
+  body {
+    @apply bg-dashboard-bg text-white font-sans;
+  }
+}
+
+.glass {
+  background: rgba(22, 22, 24, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.orange-glow {
+  box-shadow: 0 0 20px rgba(232, 81, 26, 0.15);
+}
+
+@keyframes pulse-orange {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-orange {
+  animation: pulse-orange 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
