@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Lead, LeadType, LeadOrigin, LeadStatus, STATUS_MAP } from '../types';
+import { Lead, LeadType, LeadOrigin, LeadStatus, STATUS_MAP, InvestmentInsight } from '../types';
 
 const NAMES = ["Tiago Ferreira", "Ana Silva", "Carlos Santos", "Mafalda Sousa", "Ricardo Pereira", "Inês Oliveira", "Duarte Menezes", "Beatriz Lima", "Gonçalo Rebelo", "Joana Matos"];
 const INTERESTS_BUYER = ["T3 em Braga", "Penthouse na Foz", "T2 renovado em Lisboa", "Moradia com piscina", "Apartamento perto do metro"];

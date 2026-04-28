@@ -3,31 +3,31 @@
 @theme {
   --color-brand: #E8511A;
   --color-brand-hover: #D44415;
-  --color-dashboard-bg: #030303;
-  --color-card-bg: #09090b;
-  --color-card-border: #18181b;
+  --color-dashboard-bg: #f8fafc;
+  --color-card-bg: #ffffff;
+  --color-card-border: #e2e8f0;
   --font-sans: "Inter", "Geist Sans", system-ui, sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", monospace;
 }
 
 @layer base {
   body {
-    @apply bg-dashboard-bg text-white font-sans antialiased selection:bg-brand/30;
+    @apply bg-dashboard-bg text-slate-900 font-sans antialiased selection:bg-brand/30;
     letter-spacing: -0.01em;
   }
 }
 
 .glass {
-  background: rgba(9, 9, 11, 0.4);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .glass-premium {
-  background: radial-gradient(circle at top left, rgba(232, 252, 252, 0.01), transparent 40%), 
-              rgba(3, 3, 3, 0.8);
+  background: radial-gradient(circle at top left, rgba(232, 81, 26, 0.03), transparent 40%), 
+              rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(40px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .terminal-line {
@@ -36,11 +36,11 @@
 }
 
 .orange-glow {
-  box-shadow: 0 0 80px rgba(232, 81, 26, 0.06);
+  box-shadow: 0 0 80px rgba(232, 81, 26, 0.1);
 }
 
 .text-gradient {
-  background: linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0.5) 100%);
+  background: linear-gradient(180deg, #0f172a 0%, rgba(15, 23, 42, 0.6) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

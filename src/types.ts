@@ -91,3 +91,14 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
 }
+
+export interface Consultant {
+  id: string;
+  name: string;
+  photo: string;
+  recruitmentRate: number; // %
+  salesRate: number; // %
+  leadsClosed: number;
+  totalVolume: number;
+  status: 'active' | 'on_boarding' | 'vacation';
+}

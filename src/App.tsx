@@ -63,7 +63,7 @@ import {
 } from 'recharts';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Lead, LeadType, LeadStatus, ChatMessage, Property, BusinessTraspass, MortgageProcess, STATUS_MAP, InvestmentInsight, HotDeal } from './types';
+import { Lead, LeadType, LeadStatus, ChatMessage, Property, BusinessTraspass, MortgageProcess, STATUS_MAP, InvestmentInsight, HotDeal, Consultant } from './types';
 import { useDemoMode } from './hooks/useDemoMode';
 import { getAIReply } from './lib/gemini';
 
@@ -210,12 +210,56 @@ const HOT_DEALS: HotDeal[] = [
   }
 ];
 
+const INITIAL_CONSULTANTS: Consultant[] = [
+  {
+    id: 'c1',
+    name: 'Carlos Oliveira',
+    photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos',
+    recruitmentRate: 85,
+    salesRate: 72,
+    leadsClosed: 14,
+    totalVolume: 2450000,
+    status: 'active'
+  },
+  {
+    id: 'c2',
+    name: 'Sofia Mendes',
+    photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sofia',
+    recruitmentRate: 92,
+    salesRate: 88,
+    leadsClosed: 22,
+    totalVolume: 4100000,
+    status: 'active'
+  },
+  {
+    id: 'c3',
+    name: 'Ricardo Lima',
+    photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ricardo',
+    recruitmentRate: 65,
+    salesRate: 45,
+    leadsClosed: 8,
+    totalVolume: 1200000,
+    status: 'on_boarding'
+  },
+  {
+    id: 'c4',
+    name: 'Ana Silva',
+    photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana',
+    recruitmentRate: 78,
+    salesRate: 64,
+    leadsClosed: 11,
+    totalVolume: 1850000,
+    status: 'active'
+  }
+];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'war-room' | 'imoveis' | 'negocios' | 'credito' | 'leads' | 'settings' | 'investor'>('war-room');
+  const [activeTab, setActiveTab] = useState<'war-room' | 'imoveis' | 'negocios' | 'credito' | 'leads' | 'settings' | 'investor' | 'recruitment' | 'consultants'>('war-room');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [properties, setProperties] = useState<Property[]>(INITIAL_PROPERTIES);
   const [businesses, setBusinesses] = useState<BusinessTraspass[]>(INITIAL_BUSINESSES);
   const [mortgages, setMortgages] = useState<MortgageProcess[]>(INITIAL_MORTGAGES);
+  const [consultants, setConsultants] = useState<Consultant[]>(INITIAL_CONSULTANTS);
   const [isDemoActive, setIsDemoActive] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>({});
@@ -400,9 +444,9 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-dashboard-bg text-white overflow-hidden font-sans relative">
+    <div className="flex h-screen bg-dashboard-bg text-slate-900 overflow-hidden font-sans relative">
       {/* Sidebar - desktop */}
-      <aside className="hidden lg:flex w-64 border-r border-card-border bg-dashboard-bg/50 backdrop-blur-xl flex-col z-20">
+      <aside className="hidden lg:flex w-64 border-r border-card-border bg-white flex-col z-20">
         <SidebarContent 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
@@ -425,13 +469,13 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden"
             />
             <motion.aside 
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              className="fixed inset-y-0 left-0 w-72 bg-dashboard-bg border-r border-card-border z-40 lg:hidden flex flex-col"
+              className="fixed inset-y-0 left-0 w-72 bg-white border-r border-card-border z-40 lg:hidden flex flex-col"
             >
               <SidebarContent 
                 activeTab={activeTab} 
@@ -451,21 +495,23 @@ export default function App() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 relative overflow-y-auto bg-gradient-to-br from-dashboard-bg to-[#0d0d12]">
-        <header className="sticky top-0 h-16 lg:h-20 bg-dashboard-bg/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-10 border-b border-card-border z-10">
+      <main className="flex-1 relative overflow-y-auto bg-gradient-to-br from-dashboard-bg to-white">
+        <header className="sticky top-0 h-16 lg:h-20 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-10 border-b border-card-border z-10">
           <div className="flex items-center gap-3 lg:gap-4">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 lg:hidden text-zinc-400 hover:text-white"
+              className="p-2 lg:hidden text-zinc-400 hover:text-brand"
             >
               <LayoutDashboard size={24} />
             </button>
-            <h2 className="text-lg lg:text-xl font-semibold capitalize truncate">
+            <h2 className="text-lg lg:text-xl font-bold capitalize truncate text-slate-800">
               {activeTab === 'war-room' ? 'War Room Executivo' : 
                activeTab === 'imoveis' ? 'Portfolio Imobiliário' :
                activeTab === 'negocios' ? 'Oportunidades' :
                activeTab === 'credito' ? 'Gestão de Crédito' :
                activeTab === 'investor' ? 'Investor Mode AI' : 
+               activeTab === 'recruitment' ? 'Recrutamento & Expansão' :
+               activeTab === 'consultants' ? 'Ranking de Consultores' :
                activeTab === 'leads' ? 'Pipeline & Leads' : activeTab}
             </h2>
             {isDemoActive && (
@@ -476,16 +522,16 @@ export default function App() {
             )}
           </div>
           <div className="flex items-center gap-3 lg:gap-6">
-            <div className="hidden xl:flex items-center gap-4 bg-zinc-900 px-4 py-1.5 rounded-2xl border border-card-border">
+            <div className="hidden xl:flex items-center gap-4 bg-slate-100 px-4 py-1.5 rounded-2xl border border-card-border">
                <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                   <Instagram size={14} className="text-pink-500" />
                </div>
-               <div className="flex items-center gap-2 border-l border-zinc-800 pl-4">
+               <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                   <Facebook size={14} className="text-blue-500" />
                </div>
-               <div className="flex items-center gap-2 border-l border-zinc-800 pl-4">
+               <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                   <MessageCircle size={14} className="text-green-500" />
                </div>
@@ -495,8 +541,8 @@ export default function App() {
                <button 
                 onClick={() => setSettings({...settings, autoPilot: !settings.autoPilot})}
                 className={cn(
-                  "hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl border transition-all text-xs font-bold",
-                  settings.autoPilot ? "bg-brand/10 border-brand/40 text-brand orange-glow" : "bg-zinc-900 border-card-border text-zinc-500"
+                  "hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl border transition-all text-xs font-bold shadow-sm",
+                  settings.autoPilot ? "bg-brand/10 border-brand/40 text-brand orange-glow" : "bg-white border-card-border text-slate-400"
                 )}
                >
                  {settings.autoPilot ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
@@ -505,14 +551,14 @@ export default function App() {
             )}
 
             <div className="relative group hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-hover:text-zinc-300 transition-colors" size={18} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-brand transition-colors" size={18} />
               <input 
                 type="text" 
                 placeholder="Pesquisar..." 
-                className="bg-card-bg border border-card-border rounded-full py-2 pl-10 pr-6 text-sm w-32 lg:w-64 focus:outline-none focus:border-brand/50 transition-all"
+                className="bg-white border border-card-border rounded-full py-2 pl-10 pr-6 text-sm w-32 lg:w-64 focus:outline-none focus:border-brand/50 transition-all shadow-sm"
               />
             </div>
-            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-zinc-800 border-2 border-brand/50 flex items-center justify-center overflow-hidden">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-slate-100 border-2 border-brand flex items-center justify-center overflow-hidden">
               <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Admin" className="w-full h-full object-cover" />
             </div>
           </div>
@@ -1329,16 +1375,16 @@ export default function App() {
             </div>
           )}
 
-          {activeTab === 'recruiter' && (
-            <div className="space-y-8">
+          {activeTab === 'recruitment' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-2xl font-bold">Recrutamento Inteligente</h3>
-                  <p className="text-zinc-500 text-sm">Expanda a sua equipa com consultores de topo filtrados por IA.</p>
+                  <h3 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">Recrutamento Inteligente</h3>
+                  <p className="text-slate-500 text-sm">Expanda a sua equipa com consultores de topo filtrados por IA.</p>
                 </div>
                 <button 
                   onClick={() => alert('Defina os critérios da vaga e a IA irá filtrar candidatos no LinkedIn e Instagram automaticamente.')}
-                  className="bg-brand px-6 py-3 rounded-xl text-sm font-bold orange-glow flex items-center gap-2 hover:bg-brand-hover transition-colors"
+                  className="bg-brand text-white px-6 py-3 rounded-xl text-sm font-bold orange-glow flex items-center gap-2 hover:bg-brand-hover transition-colors"
                 >
                    <Users size={18} />
                    Abrir Vaga Nova
@@ -1346,41 +1392,153 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <KPICard icon={<Users size={24} />} label="Candidatos" value={leads.filter(l => l.type === 'angariador').length} trend="+12" color="purple" />
-                <KPICard icon={<MessageSquare size={24} />} label="Entrevistas" value={leads.filter(l => l.type === 'angariador' && l.status === 'entrevista').length} trend="Ativas" color="brand" />
-                <KPICard icon={<Target size={24} />} label="Contratados" value={leads.filter(l => l.type === 'angariador' && l.status === 'contratado').length} trend="Total" color="blue" />
+                <KPICard icon={<Users size={24} />} label="Candidatos" value={leads.filter(l => l.type === 'recruta').length} trend="+12" color="blue" />
+                <KPICard icon={<MessageSquare size={24} />} label="Entrevistas" value={leads.filter(l => l.type === 'recruta' && l.status === 'entrevista').length} trend="Ativas" color="brand" />
+                <KPICard icon={<Target size={24} />} label="Contratados" value={leads.filter(l => l.type === 'recruta' && l.status === 'contratado').length} trend="Total" color="green" />
               </div>
 
-              <div className="glass border border-card-border rounded-3xl overflow-hidden">
-                <div className="p-6 border-b border-card-border bg-dashboard-bg/50">
-                  <h4 className="font-bold">Candidatos Recentes</h4>
+              <div className="glass border border-card-border rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-card-border bg-slate-50/50">
+                  <h4 className="font-bold text-slate-800">Candidatos Recentes</h4>
                 </div>
                 <div className="divide-y divide-card-border">
-                  {leads.filter(l => l.type === 'angariador').map(c => (
-                    <div key={c.id} className="p-6 flex items-center justify-between hover:bg-zinc-800/30 transition-colors">
-                       <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full bg-zinc-800 border border-card-border flex items-center justify-center">
-                            <Users className="text-zinc-500" size={20} />
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-sm">{c.name}</h5>
-                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{c.interest}</p>
-                          </div>
+                  {leads.filter(l => l.type === 'recruta').length > 0 ? (
+                    leads.filter(l => l.type === 'recruta').map(c => (
+                      <div key={c.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-slate-100 border border-card-border flex items-center justify-center">
+                              <Users className="text-slate-400" size={20} />
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-sm text-slate-900">{c.name}</h5>
+                              <p className="text-[10px] text-slate-500 uppercase tracking-widest">{c.interest}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <div className="text-xs font-bold text-brand uppercase">{c.status}</div>
+                              <div className="text-[10px] text-slate-400">Submetido há 4h</div>
+                            </div>
+                            <button 
+                              onClick={() => { setSelectedLeadId(c.id); setIsChatOpen(true); }}
+                              className="bg-white border border-card-border px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-100 transition-all text-slate-700 shadow-sm"
+                            >
+                              Ver Perfil
+                            </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-12 text-center">
+                      <Users className="mx-auto text-slate-200 mb-4" size={48} />
+                      <p className="text-slate-400 text-sm">Nenhum candidato em análise no momento.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'consultants' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">Ranking de Consultores</h3>
+                  <p className="text-slate-500 text-sm">Monitorização de performance e taxas de conversão.</p>
+                </div>
+                <div className="flex gap-3">
+                  <button className="bg-white border border-card-border px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-slate-700 shadow-sm">Exportar PDF</button>
+                  <button className="bg-brand text-white px-4 py-2 rounded-xl text-xs font-bold orange-glow hover:bg-brand-hover transition-all">Definir Objetivos</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 space-y-8">
+                  <div className="glass border border-card-border rounded-3xl overflow-hidden shadow-sm">
+                    <div className="p-6 border-b border-card-border bg-slate-50/50 flex items-center justify-between">
+                      <h4 className="font-bold text-slate-800">Líderes de Performance</h4>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-brand uppercase tracking-widest">
+                        <Activity size={12} />
+                        Dados Atualizados
+                      </div>
+                    </div>
+                    <div className="divide-y divide-card-border">
+                      {consultants.sort((a,b) => b.totalVolume - a.totalVolume).map((c, idx) => (
+                        <div key={c.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-all group">
+                           <div className="flex items-center gap-6">
+                              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400 text-sm">
+                                {idx + 1}
+                              </div>
+                              <div className="relative">
+                                <img src={c.photo} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt={c.name} />
+                                <div className={cn(
+                                  "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm",
+                                  c.status === 'active' ? "bg-green-500" : "bg-zinc-400"
+                                )} />
+                              </div>
+                              <div>
+                                <h5 className="font-bold text-base text-slate-900 group-hover:text-brand transition-colors">{c.name}</h5>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">
+                                  {c.status === 'active' ? 'CONSULTOR_PRO' : 'EM_INTEGRAÇÃO'}
+                                </p>
+                              </div>
+                           </div>
+                           <div className="flex gap-12 items-center">
+                              <div className="text-center">
+                                <p className="text-[10px] text-slate-400 uppercase font-mono mb-1">Lead Closing</p>
+                                <p className="text-lg font-black text-slate-800">{c.salesRate}%</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-[10px] text-slate-400 uppercase font-mono mb-1">Recrutamento</p>
+                                <p className="text-lg font-black text-slate-800">{c.recruitmentRate}%</p>
+                              </div>
+                              <div className="text-right min-w-[120px]">
+                                <p className="text-[10px] text-slate-400 uppercase font-mono mb-1">Volume Total</p>
+                                <p className="text-lg font-black text-brand">€{(c.totalVolume/1000000).toFixed(1)}M</p>
+                              </div>
+                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-4 space-y-6">
+                  <div className="glass p-8 rounded-3xl border border-card-border shadow-sm">
+                    <h4 className="text-sm font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
+                       <Zap size={16} className="text-brand" />
+                       IA Predict (Equipa)
+                    </h4>
+                    <div className="space-y-6">
+                       <div className="p-4 bg-brand/5 border border-brand/10 rounded-2xl">
+                          <p className="text-xs font-bold text-brand mb-2">HOTSPOT DE RECRUTAMENTO</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">
+                            A zona de <b>Arcos de Valdevez</b> mostra um pico de 42% em novos consultores independentes este mês.
+                          </p>
                        </div>
-                       <div className="flex items-center gap-6">
-                          <div className="text-right">
-                             <div className="text-xs font-bold text-brand uppercase">{c.status}</div>
-                             <div className="text-[10px] text-zinc-600">Submetido há 4h</div>
+                       <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                             <span className="text-xs text-slate-500">Churn Rate Estimado</span>
+                             <span className="text-xs font-bold text-green-500">2.1% (Baixo)</span>
                           </div>
-                          <button 
-                            onClick={() => { setSelectedLeadId(c.id); setIsChatOpen(true); }}
-                            className="bg-zinc-900 border border-card-border px-4 py-2 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-all"
-                          >
-                            Ver Perfil
-                          </button>
+                          <div className="flex items-center justify-between">
+                             <span className="text-xs text-slate-500">Capacidade de Expansão</span>
+                             <span className="text-xs font-bold text-slate-800">84%</span>
+                          </div>
                        </div>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 text-white relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
+                       <Users size={80} />
+                    </div>
+                    <h4 className="text-lg font-bold mb-2">Academia Fox River</h4>
+                    <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                      Transforme novos talentos em máquinas de venda com o nosso plano de onboarding IA.
+                    </p>
+                    <button className="w-full py-3 bg-white text-slate-900 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all">Iniciar Formação</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1550,15 +1708,15 @@ function SidebarContent({
           <select 
             value={currentAgencyId}
             onChange={(e) => setCurrentAgencyId(e.target.value)}
-            className="bg-transparent border-none text-white font-bold text-sm tracking-tight uppercase focus:ring-0 w-full cursor-pointer appearance-none hover:text-brand transition-colors p-0"
+            className="bg-transparent border-none text-slate-900 font-bold text-sm tracking-tight uppercase focus:ring-0 w-full cursor-pointer appearance-none hover:text-brand transition-colors p-0"
           >
             {agencies.map(a => (
-              <option key={a.id} value={a.id} className="bg-zinc-950 text-white">{a.name.split(' ')[0]}</option>
+              <option key={a.id} value={a.id} className="bg-white text-slate-900">{a.name.split(' ')[0]}</option>
             ))}
           </select>
           <div className="flex items-center gap-1.5 mt-0.5">
              <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-             <p className="text-[9px] text-zinc-600 uppercase tracking-[0.2em] font-bold">Fox River Engine</p>
+             <p className="text-[9px] text-slate-500 uppercase tracking-[0.2em] font-bold">Fox River Engine</p>
           </div>
         </div>
       </div>
@@ -1594,8 +1752,20 @@ function SidebarContent({
           icon={<Target size={18} />}
           label="Leads & Pipeline"
         />
+        <NavItem 
+          active={activeTab === 'recruitment'} 
+          onClick={() => handleTabChange('recruitment')}
+          icon={<Users size={18} />}
+          label="Recrutamento"
+        />
+        <NavItem 
+          active={activeTab === 'consultants'} 
+          onClick={() => handleTabChange('consultants')}
+          icon={<BarChart3 size={18} />}
+          label="Consultores"
+        />
 
-        <div className="h-px bg-white/5 my-4" />
+        <div className="h-px bg-slate-200 my-4" />
 
         <NavItem 
           active={activeTab === 'investor'} 
@@ -1616,12 +1786,12 @@ function SidebarContent({
 
       <div className="p-6 border-t border-card-border">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-xs text-zinc-500">Modo Demo</span>
+          <span className="text-xs text-slate-500 font-medium">Modo Demo</span>
           <button 
             onClick={() => setIsDemoActive(!isDemoActive)}
             className={cn(
               "relative w-10 h-5 lg:w-12 lg:h-6 rounded-full transition-colors",
-              isDemoActive ? "bg-brand" : "bg-zinc-800"
+              isDemoActive ? "bg-brand" : "bg-slate-200"
             )}
           >
             <div className={cn(
@@ -1631,22 +1801,12 @@ function SidebarContent({
           </button>
         </div>
         <button 
-          onClick={() => handleTabChange('settings')}
-          className={cn(
-            "flex items-center gap-3 text-sm transition-colors w-full px-2 py-2 rounded-xl",
-            activeTab === 'settings' ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white"
-          )}
-        >
-          <Settings size={18} />
-          Configurações
-        </button>
-        <button 
           onClick={() => {
             if(confirm('Deseja realmente sair da plataforma?')) {
               window.location.reload();
             }
           }}
-          className="flex items-center gap-3 text-sm text-red-500/80 hover:text-red-500 transition-colors w-full px-2 py-2 mt-2"
+          className="flex items-center gap-3 text-sm text-red-500 font-medium hover:bg-red-50 transition-colors w-full px-4 py-2.5 rounded-xl mt-2"
         >
           <Power size={18} />
           Sair
@@ -1663,8 +1823,8 @@ function NavItem({ active, onClick, icon, label }: { active?: boolean, onClick?:
       className={cn(
         "flex items-center gap-4 w-full px-5 py-3 rounded-2xl text-[13px] transition-all duration-500 group relative",
         active 
-          ? "bg-white/[0.03] text-white border border-white/5 shadow-2xl" 
-          : "text-zinc-500 hover:text-zinc-200"
+          ? "bg-brand/5 text-slate-900 border border-brand/10 shadow-sm" 
+          : "text-slate-500 hover:text-brand hover:bg-brand/5"
       )}
     >
       {active && (
@@ -1675,7 +1835,7 @@ function NavItem({ active, onClick, icon, label }: { active?: boolean, onClick?:
       )}
       <div className={cn(
         "transition-all duration-500",
-        active ? "text-brand scale-110" : "text-zinc-600 group-hover:text-zinc-400 group-hover:scale-105"
+        active ? "text-brand scale-110" : "text-slate-400 group-hover:text-brand group-hover:scale-105"
       )}>
         {React.cloneElement(icon as React.ReactElement, { size: 18 })}
       </div>
@@ -1694,23 +1854,23 @@ function KPICard({ icon, label, value, trend, color }: { icon: React.ReactNode, 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -5 }}
-      className="glass p-8 rounded-[2rem] border border-white/5 relative overflow-hidden group"
+      className="glass p-8 rounded-[2rem] border border-card-border relative overflow-hidden group shadow-sm bg-white"
     >
       <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-10 transition-opacity">
         {icon}
       </div>
       <div className="flex flex-col justify-between gap-4">
         <div>
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-1 font-mono">{label}</p>
-          <h4 className="text-2xl font-bold tracking-tight">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-1 font-mono">{label}</p>
+          <h4 className="text-2xl font-black tracking-tight text-slate-800">
              {typeof value === 'number' ? <AnimatedCounter value={value} /> : value}
           </h4>
         </div>
         <div className="flex items-center gap-2">
-           <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
+           <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
              {trend}
            </span>
-           <span className="text-[10px] text-zinc-600 font-medium">vs total</span>
+           <span className="text-[10px] text-slate-400 font-medium">vs periodo anterior</span>
         </div>
       </div>
     </motion.div>
@@ -1794,33 +1954,33 @@ function PipelineGroup({ title, leads, stages, onSelectLead }: { title: string, 
 
 function MetricCard({ label, value, prefix = "", trend, icon, secondaryValue }: { label: string, value: number, prefix?: string, trend?: string, icon: React.ReactNode, secondaryValue?: string }) {
   return (
-    <div className="glass p-6 rounded-[2rem] border border-white/5 bg-dashboard-bg relative group overflow-hidden hover:border-brand/30 transition-all cursor-crosshair">
+    <div className="glass p-6 rounded-[2rem] border border-card-border bg-white relative group overflow-hidden hover:border-brand/30 transition-all cursor-crosshair shadow-sm">
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 group-hover:text-brand transition-all">
          {icon}
       </div>
       <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       
-      <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 font-mono flex items-center gap-2">
+      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 font-mono flex items-center gap-2">
          <span className="w-1 h-1 bg-brand rounded-full animate-pulse" />
          {label}
       </p>
       
       <div className="space-y-1">
          <div className="flex items-baseline gap-2">
-            <h4 className="text-3xl font-bold tracking-tighter">
+            <h4 className="text-3xl font-black tracking-tighter text-slate-900">
                <AnimatedCounter value={value} prefix={prefix} />
             </h4>
             {trend && (
                <span className={cn(
                   "text-[10px] font-black px-1.5 py-0.5 rounded",
-                  trend.startsWith('+') ? "bg-green-500/10 text-green-500" : "bg-zinc-800 text-zinc-500"
+                  trend.startsWith('+') ? "bg-green-50 text-green-600" : "bg-slate-100 text-slate-400"
                )}>
                   {trend}
                </span>
             )}
          </div>
          {secondaryValue && (
-            <p className="text-[10px] text-zinc-500 font-mono tracking-tight">{secondaryValue}</p>
+            <p className="text-[10px] text-slate-500 font-mono tracking-tight">{secondaryValue}</p>
          )}
       </div>
       
@@ -1830,7 +1990,7 @@ function MetricCard({ label, value, prefix = "", trend, icon, secondaryValue }: 
                key={i} 
                className={cn(
                   "flex-1 rounded-full transition-all duration-500",
-                  i < 8 ? "bg-brand/20 group-hover:bg-brand" : "bg-zinc-800"
+                  i < 8 ? "bg-brand/10 group-hover:bg-brand" : "bg-slate-100"
                )}
                style={{ height: `${Math.random() * 100}%` }}
             />
