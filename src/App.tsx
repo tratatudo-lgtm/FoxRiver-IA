@@ -172,13 +172,7 @@ const INITIAL_MORTGAGES: MortgageProcess[] = [
   { id: 'm4', clientName: 'Sandra Gomes', amount: 210000, status: 'Aprovado', probability: 100, bank: 'Novo Banco' },
 ];
 
-const REGIONAL_HEATMAP = [
-  { name: 'Braga', value: 85, status: 'HOT' },
-  { name: 'Viana', value: 65, status: 'ACTIVE' },
-  { name: 'Caminha', value: 45, status: 'MEDIUM' },
-  { name: 'Valença', value: 30, status: 'LOW' },
-  { name: 'Monção', value: 55, status: 'GROWTH' },
-];
+// REGIONAL_HEATMAP removed in favor of dynamic investmentInsights
 
 const INVESTMENT_INSIGHTS: InvestmentInsight[] = [
   { location: 'Viana do Castelo', score: 92, yield: 6.8, demand: 'High', forecast: 14.2 },
@@ -239,6 +233,7 @@ export default function App() {
   });
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [investmentInsights, setInvestmentInsights] = useState<InvestmentInsight[]>(INVESTMENT_INSIGHTS);
 
   // Multi-tenant State
   const [agencies, setAgencies] = useState([
@@ -341,47 +336,20 @@ export default function App() {
   const [demoEvents, setDemoEvents] = useState<{ id: string, text: string, type: 'info' | 'success' | 'alert', time: Date }[]>([]);
 
   const addDemoEvent = useCallback((event: any) => {
-    setDemoEvents(prev => [{ ...event, time: new Date() }, ...prev].slice(0, 5));
+    setDemoEvents(prev => [{ ...event, time: new Date() }, ...prev].slice(0, 15));
   }, []);
 
-  useDemoMode(isDemoActive, handleNewLead, addDemoEvent);
+  const handleUpdateLead = useCallback((id: string, updates: Partial<Lead>) => {
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  }, []);
 
-  // Pipeline Evolution Simulation
-  useEffect(() => {
-    if (!isDemoActive || !settings.autoPilot) return;
+  const handleUpdateInsight = useCallback((location: string, updates: Partial<InvestmentInsight>) => {
+    setInvestmentInsights(prev => prev.map(i => i.location === location ? { ...i, ...updates } : i));
+  }, []);
 
-    const interval = setInterval(() => {
-      setLeads(prev => {
-        if (prev.length === 0) return prev;
-        const randomIndex = Math.floor(Math.random() * prev.length);
-        const lead = prev[randomIndex];
-        
-        // Only move some leads
-        if (Math.random() > 0.7) {
-          const stages = STATUS_MAP[lead.type as any] || STATUS_MAP['angariador'];
-          const currentStageIndex = stages.indexOf(lead.status);
-          
-          if (currentStageIndex < stages.length - 1) {
-            const nextStatus = stages[currentStageIndex + 1];
-            const updatedLead = { 
-              ...lead, 
-              status: nextStatus,
-              score: Math.min(100, (lead.score || 0) + 5),
-              probability: Math.min(100, (lead.probability || 0) + 10)
-            };
-            
-            // Log move
-            console.log(`Pipeline: ${lead.name} moved to ${nextStatus}`);
-            
-            return prev.map((l, i) => i === randomIndex ? updatedLead : l);
-          }
-        }
-        return prev;
-      });
-    }, 15000); // Every 15 seconds try to move someone
+  useDemoMode(isDemoActive, handleNewLead, handleUpdateLead, handleUpdateInsight, addDemoEvent);
 
-    return () => clearInterval(interval);
-  }, [isDemoActive, settings.autoPilot]);
+  // Pipeline Evolution Simulation logic removed as it's now handled by the useDemoMode hook
 
   const selectedLead = useMemo(() => leads.find(l => l.id === selectedLeadId), [leads, selectedLeadId]);
 
@@ -615,44 +583,81 @@ export default function App() {
                   </div>
 
                   {/* REGIONAL HEATMAP / PERFORMANCE */}
-                  <div className="glass-premium rounded-[2.5rem] p-10 border border-white/5 relative overflow-hidden">
+                  <div className="glass-premium rounded-[2.5rem] p-10 border border-white/5 relative overflow-hidden h-full flex flex-col">
                     <div className="absolute top-0 right-0 p-10 opacity-5">
                        <MapPin size={150} />
                     </div>
                     <div className="flex items-center justify-between mb-10 relative z-10">
                        <div>
-                          <h3 className="text-xl font-bold tracking-tight">Estratégia Regional Norte</h3>
-                          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono mt-1">Nível de actividade detectada por IA</p>
+                          <h3 className="text-xl font-bold tracking-tight uppercase">Dashboard de Rendimento Regional</h3>
+                          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono mt-1">Análise preditiva de hotspots em tempo real</p>
                        </div>
-                       <div className="flex items-center gap-2">
-                          <Activity size={14} className="text-brand animate-pulse" />
-                          <span className="text-[10px] font-bold text-zinc-400 font-mono">LIVE_SCANNING</span>
+                       <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2 px-3 py-1 bg-brand/10 border border-brand/20 rounded-full">
+                             <div className="w-1.5 h-1.5 bg-brand rounded-full animate-pulse" />
+                             <span className="text-[9px] font-bold text-brand uppercase tracking-tighter">AI_ACTIVE</span>
+                          </div>
                        </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-6 relative z-10">
-                       {REGIONAL_HEATMAP.map(region => (
-                         <div key={region.name} className="space-y-4">
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                               <motion.div 
-                                 initial={{ width: 0 }}
-                                 animate={{ width: `${region.value}%` }}
-                                 className={cn(
-                                   "h-full rounded-full transition-colors",
-                                   region.status === 'HOT' ? "bg-red-500" :
-                                   region.status === 'ACTIVE' ? "bg-brand" : "bg-zinc-700"
-                                 )}
-                               />
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                       <div className="space-y-4">
+                          {investmentInsights.slice(0, 5).map(region => (
+                            <div key={region.location} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl group hover:bg-white/[0.04] transition-all">
+                               <div className="flex items-center justify-between mb-3">
+                                  <span className="text-xs font-bold tracking-tight">{region.location}</span>
+                                  <span className={cn(
+                                    "text-[9px] font-black px-2 py-0.5 rounded",
+                                    region.score > 85 ? "bg-red-500/10 text-red-500" : "bg-brand/10 text-brand"
+                                  )}>{region.score > 85 ? 'HIGH_RENTABILITY' : 'GROWING'}</span>
+                               </div>
+                               <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-3">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${region.score}%` }}
+                                    className={cn(
+                                      "h-full rounded-full",
+                                      region.score > 85 ? "bg-red-500" : "bg-brand"
+                                    )}
+                                  />
+                               </div>
+                               <div className="flex items-center justify-between">
+                                  <div className="flex gap-4">
+                                     <div>
+                                        <p className="text-[8px] text-zinc-500 uppercase font-mono">Score</p>
+                                        <p className="text-sm font-bold">{region.score}</p>
+                                     </div>
+                                     <div>
+                                        <p className="text-[8px] text-zinc-500 uppercase font-mono">Forecast</p>
+                                        <p className="text-sm font-bold text-green-500">+{region.forecast}%</p>
+                                     </div>
+                                  </div>
+                                  <div className="text-right">
+                                     <p className="text-[8px] text-zinc-500 uppercase font-mono">ROI</p>
+                                     <p className="text-sm font-bold text-brand">{region.yield}%</p>
+                                  </div>
+                               </div>
                             </div>
-                            <div>
-                               <p className="text-xs font-bold">{region.name}</p>
-                               <p className={cn(
-                                 "text-[9px] font-bold uppercase tracking-widest",
-                                 region.status === 'HOT' ? "text-red-500" : "text-zinc-600"
-                               )}>{region.status}</p>
-                            </div>
-                         </div>
-                       ))}
+                          ))}
+                       </div>
+                       
+                       <div className="bg-zinc-950/50 rounded-3xl border border-white/5 p-6 relative overflow-hidden flex flex-col justify-center items-center text-center">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(232,81,26,0.1)_0%,transparent_60%)]" />
+                          <Activity size={48} className="text-brand/20 mb-6" />
+                          <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.3em] mb-2 font-mono">Recomendação de Alocação</h4>
+                          <p className="text-lg font-bold mb-6 text-white tracking-tight">"Foco agressivo em Viana do Castelo para ativos de yield superior a 8.2%"</p>
+                          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mb-6" />
+                          <div className="grid grid-cols-2 gap-8 w-full">
+                             <div>
+                                <p className="text-[10px] text-zinc-500 uppercase font-mono mb-1">Confiança IA</p>
+                                <p className="text-xl font-bold">94%</p>
+                             </div>
+                             <div>
+                                <p className="text-[10px] text-zinc-500 uppercase font-mono mb-1">Risco Médio</p>
+                                <p className="text-xl font-bold text-green-500">Baixo</p>
+                             </div>
+                          </div>
+                       </div>
                     </div>
                   </div>
                 </div>
@@ -787,10 +792,10 @@ export default function App() {
                         </p>
                         <button className="w-full mt-8 py-4 bg-zinc-900 border border-white/5 text-xs font-bold rounded-2xl hover:bg-zinc-800 transition-all">Configurar Filtros de Risco</button>
                      </div>
-                  </div>
-               </div>
-            </div>
-          )}
+                   </div>
+                </div>
+             </div>
+           )}
 
           {activeTab === 'investor' && (
             <div className="space-y-12 animate-in fade-in duration-700">
@@ -802,21 +807,21 @@ export default function App() {
                      </div>
                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 font-mono">Investment Score Médio</p>
                      <div className="flex items-baseline gap-2">
-                        <h4 className="text-4xl font-bold">84.2</h4>
+                        <h4 className="text-4xl font-bold">{(investmentInsights.reduce((acc, i) => acc + i.score, 0) / investmentInsights.length).toFixed(1)}</h4>
                         <span className="text-xs text-green-500 font-bold font-mono">ULTRA_BULLISH</span>
                      </div>
                   </div>
                   <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40">
                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 font-mono">Volume Sob Análise</p>
-                     <h4 className="text-4xl font-bold">€12.4M</h4>
+                     <h4 className="text-4xl font-bold">€{(leads.filter(l => l.type === 'investor' || l.type === 'negócio').reduce((acc, l) => acc + (l.value || 0), 0) / 1000000).toFixed(1)}M</h4>
                   </div>
                   <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40">
                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 font-mono">Yield Média Portfolio</p>
-                     <h4 className="text-4xl font-bold">6.2%</h4>
+                     <h4 className="text-4xl font-bold">{(investmentInsights.reduce((acc, i) => acc + i.yield, 0) / investmentInsights.length).toFixed(1)}%</h4>
                   </div>
                   <div className="glass p-8 rounded-[2.5rem] border border-brand/20 bg-brand/5">
                      <p className="text-[10px] font-bold text-brand uppercase tracking-widest mb-2 font-mono">IA Forecast (24m)</p>
-                     <h4 className="text-4xl font-bold text-white">+18.5%</h4>
+                     <h4 className="text-4xl font-bold text-white">+{ (investmentInsights.reduce((acc, i) => acc + i.forecast, 0) / investmentInsights.length).toFixed(1) }%</h4>
                   </div>
                </div>
 
@@ -827,7 +832,7 @@ export default function App() {
                         <div className="absolute top-8 left-8 z-20 space-y-4">
                            <div className="bg-black/60 backdrop-blur-md p-6 rounded-3xl border border-white/10 space-y-4 w-64">
                               <div className="flex items-center justify-between">
-                                 <h4 className="text-xs font-bold uppercase tracking-widest font-mono text-zinc-400">Map Filters</h4>
+                                 <h4 className="text-xs font-bold uppercase tracking-widest font-mono text-zinc-400">Map Layers</h4>
                                  <Layers size={14} className="text-brand" />
                               </div>
                               <div className="space-y-2">
@@ -837,20 +842,6 @@ export default function App() {
                                        <div className="w-2 h-2 rounded-full bg-brand" />
                                     </div>
                                  ))}
-                              </div>
-                           </div>
-                           
-                           <div className="bg-black/60 backdrop-blur-md p-6 rounded-3xl border border-white/10 w-64">
-                              <h4 className="text-[10px] font-bold uppercase tracking-widest font-mono text-zinc-500 mb-4">Real-time Pulse</h4>
-                              <div className="space-y-3">
-                                 <div className="flex items-center gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                    <span className="text-[9px] font-bold text-zinc-300">Norte Litoral: High Demand</span>
-                                 </div>
-                                 <div className="flex items-center gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                    <span className="text-[9px] font-bold text-zinc-300">Minho Central: Value Growth</span>
-                                 </div>
                               </div>
                            </div>
                         </div>
@@ -872,12 +863,11 @@ export default function App() {
                                     <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-brand/20 blur-[80px] rounded-full" />
                                     
                                     {/* DATA PINS */}
-                                    {INVESTMENT_INSIGHTS.map((insight, idx) => (
+                                    {investmentInsights.map((insight, idx) => (
                                        <motion.div
                                           key={insight.location}
                                           initial={{ height: 0, opacity: 0 }}
-                                          animate={{ height: insight.score * 1.5, opacity: 1 }}
-                                          transition={{ delay: idx * 0.1, duration: 1 }}
+                                          animate={{ height: insight.score * 2.5, opacity: 1 }}
                                           className="absolute w-1 bg-gradient-to-t from-brand to-transparent group cursor-pointer"
                                           style={{ 
                                              left: `${20 + idx * 12}%`, 
@@ -887,7 +877,7 @@ export default function App() {
                                           <div className="absolute -top-1 w-2 h-2 -left-0.5 rounded-full bg-brand shadow-[0_0_15px_rgba(232,81,26,0.8)]" />
                                           <div className="absolute -top-12 left-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all w-32 whitespace-nowrap">
                                              <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{insight.location}</p>
-                                             <p className="text-xs font-bold">ROI: {insight.yield}%</p>
+                                             <p className="text-xs font-bold">ROI: {insight.yield.toFixed(1)}%</p>
                                           </div>
                                        </motion.div>
                                     ))}
@@ -906,10 +896,10 @@ export default function App() {
                      <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40">
                         <div className="flex items-center gap-3 mb-8">
                            <BarChart3 className="text-brand" size={18} />
-                           <h3 className="text-xs font-bold uppercase tracking-[0.2em] font-mono">Ranking de Rentabilidade</h3>
+                           <h3 className="text-xs font-bold uppercase tracking-[0.2em] font-mono">Market Hotspots</h3>
                         </div>
                         <div className="space-y-6">
-                           {INVESTMENT_INSIGHTS.map((insight) => (
+                           {investmentInsights.sort((a,b) => b.score - a.score).map((insight) => (
                               <div key={insight.location} className="flex items-center justify-between group cursor-pointer">
                                  <div>
                                     <p className="text-sm font-bold">{insight.location}</p>
@@ -917,7 +907,7 @@ export default function App() {
                                  </div>
                                  <div className="text-right">
                                     <p className="text-lg font-bold text-brand">{insight.score}</p>
-                                    <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden mt-1">
+                                    <div className="w-16 h-0.5 bg-white/5 rounded-full overflow-hidden mt-1">
                                        <div className="h-full bg-brand" style={{ width: `${insight.score}%` }} />
                                     </div>
                                  </div>
@@ -926,19 +916,19 @@ export default function App() {
                         </div>
                      </div>
 
-                     <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-dashboard-bg relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+                     <div className="glass-premium p-8 rounded-[2.5rem] border border-white/5 bg-dashboard-bg relative overflow-hidden flex flex-col justify-between h-[300px]">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                            <Globe size={180} />
                         </div>
                         <div className="relative z-10">
-                           <h4 className="text-lg font-bold mb-2">Oportunidades Globais</h4>
+                           <h4 className="text-lg font-bold mb-2">Global Opportunity Engine</h4>
                            <p className="text-xs text-zinc-500 leading-relaxed font-light">
-                              A IA Fox River está a monitorizar fluxos de investimento estrangeiro (Golden Visas D2/D7) com destino ao Norte de Portugal.
+                              Cross-checking Northern Portugal yields with international capital flows (D2/D7/Golden Visa).
                            </p>
                         </div>
-                        <div className="relative z-10 pt-10">
+                        <div className="relative z-10">
                            <button className="w-full py-4 bg-zinc-900 border border-white/5 rounded-2xl flex items-center justify-center gap-3 group hover:bg-zinc-800 transition-all">
-                              <span className="text-[10px] font-bold uppercase tracking-widest">Relatório de Migração</span>
+                              <span className="text-[10px] font-bold uppercase tracking-widest">Relatório Completo</span>
                               <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                            </button>
                         </div>
@@ -947,34 +937,35 @@ export default function App() {
                </div>
 
                {/* HOT DEALS SECTION */}
-               <div className="space-y-8">
+               <div className="space-y-8 mt-12">
                   <div className="flex items-center justify-between">
-                     <h3 className="text-3xl font-bold tracking-tight">Hot Deals: Under Market Value</h3>
-                     <div className="px-4 py-1.5 bg-red-500/10 text-red-500 rounded-full border border-red-500/20 text-[10px] font-bold flex items-center gap-2">
+                     <h3 className="text-3xl font-bold tracking-tight uppercase">Hot Deals: Under Market Value</h3>
+                     <div className="px-4 py-2 bg-red-500/10 text-red-500 rounded-full border border-red-500/20 text-[10px] font-black flex items-center gap-2 animate-pulse font-mono">
                         <TrendingDown size={14} />
-                        DETETADAS OPORTUNIDADES ABAIXO DE 20% DO VALOR KVM
+                        OPORTUNIDADES ABAIXO DE 20% KVM DETECTADAS
                      </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      {HOT_DEALS.map(deal => (
-                        <div key={deal.id} className="glass-premium p-10 rounded-[3rem] border border-white/5 bg-dashboard-bg group hover:border-brand/20 transition-all cursor-pointer">
-                           <div className="flex items-center justify-between mb-8">
-                              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-brand">
-                                 <Zap size={20} />
+                        <div key={deal.id} className="glass-premium p-10 rounded-[3rem] border border-white/5 bg-dashboard-bg group hover:border-brand/30 transition-all cursor-pointer relative overflow-hidden">
+                           <div className="absolute top-0 right-0 w-32 h-32 bg-brand/5 blur-[50px] -mr-16 -mt-16" />
+                           <div className="flex items-center justify-between mb-8 relative z-10">
+                              <div className="p-4 rounded-2xl bg-brand/10 border border-brand/20 text-brand">
+                                 <Zap size={24} />
                               </div>
                               <div className="text-right">
                                  <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest font-mono">Discount vs Market</span>
-                                 <p className="text-2xl font-bold text-white">-{deal.discount}%</p>
+                                 <p className="text-3xl font-bold text-white">-{deal.discount}%</p>
                               </div>
                            </div>
 
-                           <div className="space-y-2 mb-10">
+                           <div className="space-y-2 mb-10 relative z-10">
                               <p className="text-[10px] font-bold text-brand uppercase tracking-widest font-mono">{deal.location}</p>
-                              <h4 className="text-2xl font-bold tracking-tight">{deal.title}</h4>
+                              <h4 className="text-2xl font-bold tracking-tight text-zinc-100">{deal.title}</h4>
                            </div>
 
-                           <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/5">
+                           <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/5 relative z-10">
                               <div>
                                  <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Preço Alvo</p>
                                  <p className="text-lg font-bold">€{(deal.price/1000).toFixed(0)}k</p>
@@ -989,7 +980,7 @@ export default function App() {
                               </div>
                            </div>
 
-                           <button className="w-full mt-10 py-5 bg-white text-black rounded-[2rem] text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-brand hover:text-white transition-all group-hover:scale-[1.02]">
+                           <button className="w-full mt-10 py-5 bg-white text-black rounded-[2rem] text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-brand hover:text-white transition-all group-hover:scale-[1.02] active:scale-95 shadow-xl">
                               Analisar Business Plan
                               <ArrowUpRight size={18} />
                            </button>
@@ -999,8 +990,6 @@ export default function App() {
                </div>
             </div>
           )}
-
-
           {activeTab === 'settings' && (
             <div className="max-w-5xl space-y-8 pb-10">
               <div className="flex items-center justify-between mb-8">
@@ -1803,18 +1792,49 @@ function PipelineGroup({ title, leads, stages, onSelectLead }: { title: string, 
 
 // --- WAR ROOM COMPONENTS ---
 
-function MetricCard({ label, value, prefix = "", trend, icon }: { label: string, value: number, prefix?: string, trend?: string, icon: React.ReactNode }) {
+function MetricCard({ label, value, prefix = "", trend, icon, secondaryValue }: { label: string, value: number, prefix?: string, trend?: string, icon: React.ReactNode, secondaryValue?: string }) {
   return (
-    <div className="glass p-6 rounded-[2rem] border border-white/5 bg-dashboard-bg relative group overflow-hidden">
-      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+    <div className="glass p-6 rounded-[2rem] border border-white/5 bg-dashboard-bg relative group overflow-hidden hover:border-brand/30 transition-all cursor-crosshair">
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 group-hover:text-brand transition-all">
          {icon}
       </div>
-      <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-2 font-mono">{label}</p>
-      <div className="flex items-baseline gap-2">
-         <h4 className="text-2xl font-bold tracking-tight">
-            <AnimatedCounter value={value} prefix={prefix} />
-         </h4>
-         {trend && <span className={cn("text-[9px] font-bold", trend.startsWith('+') ? "text-green-500" : "text-zinc-500")}>{trend}</span>}
+      <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      
+      <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 font-mono flex items-center gap-2">
+         <span className="w-1 h-1 bg-brand rounded-full animate-pulse" />
+         {label}
+      </p>
+      
+      <div className="space-y-1">
+         <div className="flex items-baseline gap-2">
+            <h4 className="text-3xl font-bold tracking-tighter">
+               <AnimatedCounter value={value} prefix={prefix} />
+            </h4>
+            {trend && (
+               <span className={cn(
+                  "text-[10px] font-black px-1.5 py-0.5 rounded",
+                  trend.startsWith('+') ? "bg-green-500/10 text-green-500" : "bg-zinc-800 text-zinc-500"
+               )}>
+                  {trend}
+               </span>
+            )}
+         </div>
+         {secondaryValue && (
+            <p className="text-[10px] text-zinc-500 font-mono tracking-tight">{secondaryValue}</p>
+         )}
+      </div>
+      
+      <div className="mt-6 flex gap-1 items-end h-3">
+         {[...Array(12)].map((_, i) => (
+            <div 
+               key={i} 
+               className={cn(
+                  "flex-1 rounded-full transition-all duration-500",
+                  i < 8 ? "bg-brand/20 group-hover:bg-brand" : "bg-zinc-800"
+               )}
+               style={{ height: `${Math.random() * 100}%` }}
+            />
+         ))}
       </div>
     </div>
   );
