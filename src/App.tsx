@@ -101,7 +101,7 @@ const CHART_DATA = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pipelines' | 'crm'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pipelines' | 'crm' | 'settings' | 'copilot' | 'recruiter'>('dashboard');
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [isDemoActive, setIsDemoActive] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -110,6 +110,37 @@ export default function App() {
   const [isTyping, setIsTyping] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Multi-tenant State
+  const [agencies, setAgencies] = useState([
+    { id: '1', name: "Fox River Real Estate", theme: 'orange' },
+    { id: '2', name: "Algarve Luxury Prime", theme: 'blue' },
+    { id: '3', name: "Porto City Living", theme: 'purple' }
+  ]);
+  const [currentAgencyId, setCurrentAgencyId] = useState('1');
+
+  // Settings State
+  const [settings, setSettings] = useState({
+    agencyName: "Fox River Real Estate",
+    autoPilot: true,
+    responseTime: "imediato",
+    maxLeadsDay: 100,
+    apiConnected: true,
+    workflows: [
+      { id: '1', name: 'Boas-vindas Instagram', trigger: 'Novo Lead (IG)', action: 'Mensagem AI' },
+      { id: '2', name: 'Follow-up Vendedores', trigger: 'Sem resposta (24h)', action: 'SMS Lembrete' }
+    ]
+  });
+
+  const [settingsTab, setSettingsTab] = useState<'geral' | 'automação' | 'equipa' | 'planos'>('geral');
+
+  // Sync settings name with current agency for demo purposes
+  useEffect(() => {
+    const agency = agencies.find(a => a.id === currentAgencyId);
+    if (agency) {
+      setSettings(prev => ({ ...prev, agencyName: agency.name }));
+    }
+  }, [currentAgencyId, agencies]);
 
   // Handle new lead from Demo Mode or otherwise
   const handleNewLead = useCallback((newLead: Lead) => {
@@ -120,7 +151,7 @@ export default function App() {
         setIsTyping(true);
         const reply = await getAIReply(newLead.type, newLead.name, newLead.interest, []);
         const aiMsg: ChatMessage = {
-          id: Math.random().toString(),
+          id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           sender: 'ai',
           text: reply,
           timestamp: new Date().toISOString()
@@ -150,7 +181,7 @@ export default function App() {
     if (!selectedLeadId || !text.trim()) return;
 
     const userMsg: ChatMessage = {
-      id: Math.random().toString(),
+      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       sender: 'lead',
       text,
       timestamp: new Date().toISOString()
@@ -167,7 +198,7 @@ export default function App() {
     const reply = await getAIReply(lead.type, lead.name, lead.interest, [...history, userMsg]);
     
     const aiMsg: ChatMessage = {
-      id: Math.random().toString(),
+      id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       sender: 'ai',
       text: reply,
       timestamp: new Date().toISOString()
@@ -175,7 +206,7 @@ export default function App() {
 
     setChatHistory(prev => ({
       ...prev,
-      [selectedLeadId]: [...(prev[selectedLeadId] || []), userMsg, aiMsg]
+      [selectedLeadId]: [...(prev[selectedLeadId] || []), aiMsg]
     }));
     setIsTyping(false);
   };
@@ -193,6 +224,10 @@ export default function App() {
           setActiveTab={setActiveTab} 
           isDemoActive={isDemoActive} 
           setIsDemoActive={setIsDemoActive} 
+          settings={settings}
+          agencies={agencies}
+          currentAgencyId={currentAgencyId}
+          setCurrentAgencyId={setCurrentAgencyId}
         />
       </aside>
 
@@ -218,6 +253,10 @@ export default function App() {
                 setActiveTab={setActiveTab} 
                 isDemoActive={isDemoActive} 
                 setIsDemoActive={setIsDemoActive}
+                settings={settings}
+                agencies={agencies}
+                currentAgencyId={currentAgencyId}
+                setCurrentAgencyId={setCurrentAgencyId}
                 onClose={() => setIsMobileMenuOpen(false)}
               />
             </motion.aside>
@@ -433,6 +472,402 @@ export default function App() {
               </table>
             </div>
           )}
+
+          {activeTab === 'settings' && (
+            <div className="max-w-5xl space-y-8 pb-10">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold">Configurações do Sistema</h3>
+                  <p className="text-zinc-500 text-sm">Controle as regras de negócio e automação da sua agência.</p>
+                </div>
+                <div className="flex bg-zinc-900 p-1 rounded-2xl border border-card-border">
+                  {[
+                    { id: 'geral', label: 'Geral', icon: <Settings size={14} /> },
+                    { id: 'automação', label: 'Automação', icon: <Target size={14} /> },
+                    { id: 'equipa', label: 'Equipa', icon: <Users size={14} /> },
+                    { id: 'planos', label: 'Planos', icon: <Briefcase size={14} /> }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSettingsTab(tab.id as any)}
+                      className={cn(
+                        "flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-bold transition-all",
+                        settingsTab === tab.id ? "bg-brand text-white orange-glow" : "text-zinc-500 hover:text-zinc-300"
+                      )}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {settingsTab === 'geral' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 space-y-8">
+                    <div className="glass rounded-3xl p-8 border border-card-border">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-brand rounded-full" />
+                        Identidade da Agência
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Nome da Agência</label>
+                          <input 
+                            type="text" 
+                            value={settings.agencyName} 
+                            onChange={(e) => setSettings({...settings, agencyName: e.target.value})}
+                            className="w-full bg-zinc-900 border border-card-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand transition-colors"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Website Corporativo</label>
+                           <input 
+                            type="text" 
+                            defaultValue="www.foxriver.pt" 
+                            className="w-full bg-zinc-900 border border-card-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="glass rounded-3xl p-8 border border-card-border">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-brand rounded-full" />
+                        Limites e Quotas
+                      </h3>
+                      <div className="space-y-6">
+                        <div className="p-4 bg-zinc-900/50 rounded-2xl border border-card-border">
+                          <label className="text-xs text-zinc-500 uppercase tracking-widest font-bold block mb-4">Limite Diário de Leads</label>
+                          <div className="flex items-center gap-6">
+                            <input 
+                              type="range" 
+                              min="10" 
+                              max="1000" 
+                              step="10"
+                              value={settings.maxLeadsDay} 
+                              onChange={(e) => setSettings({...settings, maxLeadsDay: parseInt(e.target.value)})}
+                              className="flex-1 accent-brand"
+                            />
+                            <span className="text-xl font-bold w-20 text-center">{settings.maxLeadsDay}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="glass rounded-3xl p-6 border border-card-border">
+                      <h4 className="text-sm font-bold mb-4">Integridade do Sistema</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">Uptime AI</span>
+                          <span className="font-mono text-green-500">99.98%</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">Latência</span>
+                          <span className="font-mono text-zinc-400">120ms</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'automação' && (
+                <div className="space-y-8">
+                  <div className="glass rounded-3xl p-8 border border-card-border">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-lg font-semibold flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-brand rounded-full" />
+                        Fluxos de Automação
+                      </h3>
+                      <button 
+                        onClick={() => alert('Abrir criador de Workflows...')}
+                        className="bg-brand/10 text-brand px-4 py-2 rounded-xl text-xs font-bold hover:bg-brand/20 transition-all"
+                      >
+                        + Novo Fluxo
+                      </button>
+                    </div>
+                    <div className="divide-y divide-card-border border border-card-border rounded-2xl overflow-hidden">
+                      {settings.workflows.map(wf => (
+                        <div key={wf.id} className="p-4 bg-zinc-900/30 flex items-center justify-between hover:bg-zinc-800/30 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-brand">
+                              <Target size={20} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold">{wf.name}</p>
+                              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Gatilho: {wf.trigger}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-[10px] bg-brand/10 text-brand px-2 py-0.5 rounded font-bold">{wf.action}</span>
+                            <button className="text-zinc-500 hover:text-white"><Settings size={14} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-8 border border-card-border">
+                    <h3 className="text-lg font-semibold mb-6">Regras Globais de Resposta</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="p-6 bg-zinc-900/50 rounded-2xl border border-card-border">
+                         <h4 className="text-sm font-bold mb-4">Piloto Automático Inteligente</h4>
+                         <p className="text-xs text-zinc-500 mb-6">Quando ativado, a IA assume as primeiras 5 mensagens de cada conversa para qualificar o lead.</p>
+                         <button 
+                          onClick={() => setSettings({...settings, autoPilot: !settings.autoPilot})}
+                          className={cn(
+                            "w-full py-3 rounded-xl border text-xs font-bold transition-all",
+                            settings.autoPilot ? "bg-brand text-white border-brand orange-glow" : "bg-zinc-800 border-transparent text-zinc-500"
+                          )}
+                        >
+                          {settings.autoPilot ? "ATURANDO - ONLINE" : "DESATIVADO - MANUAL"}
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        <label className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Personalidade da IA</label>
+                        <select className="w-full bg-zinc-900 border border-card-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand">
+                          <option>Profissional e Executivo</option>
+                          <option>Amigável e Casual</option>
+                          <option>Agressivo e Focado em Fecho</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'equipa' && (
+                <div className="space-y-8">
+                  <div className="glass rounded-3xl p-8 border border-card-border">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-lg font-semibold">Membros da Plataforma</h3>
+                      <button className="bg-brand text-white px-6 py-2 rounded-xl text-xs font-bold orange-glow">+ Convidar</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[
+                        { name: 'Admin Principal', role: 'Owner', email: 'pt.jcosta@gmail.com' },
+                        { name: 'Consultor Carlos', role: 'Membro', email: 'carlos@foxriver.pt' },
+                        { name: 'Maria Imobiliário', role: 'Membro', email: 'maria@foxriver.pt' }
+                      ].map(member => (
+                        <div key={member.email} className="p-6 bg-zinc-900/50 rounded-2xl border border-card-border relative group">
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Settings size={14} className="text-zinc-600 hover:text-white cursor-pointer" />
+                          </div>
+                          <div className="w-12 h-12 rounded-full bg-brand/10 text-brand flex items-center justify-center font-bold mb-4">
+                            {member.name[0]}
+                          </div>
+                          <h4 className="text-sm font-bold">{member.name}</h4>
+                          <p className="text-[10px] text-zinc-500 mb-4">{member.email}</p>
+                          <span className={cn(
+                            "text-[8px] uppercase tracking-widest font-bold px-2 py-0.5 rounded",
+                            member.role === 'Owner' ? "bg-brand/20 text-brand" : "bg-zinc-800 text-zinc-400"
+                          )}>
+                            {member.role}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'planos' && (
+                <div className="space-y-8">
+                  <div className="glass rounded-3xl p-8 border border-card-border">
+                    <h3 className="text-lg font-semibold mb-8">Subscrição da Agência</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <div className="space-y-6">
+                        <div className="p-6 bg-brand/5 border border-brand/20 rounded-3xl">
+                          <span className="text-[10px] uppercase font-bold text-brand tracking-widest">Plano Atual</span>
+                          <h4 className="text-3xl font-bold mt-2">Enterprise AI</h4>
+                          <p className="text-zinc-500 text-sm mt-1">Uso ilimitado de copiloto e angariação</p>
+                        </div>
+                        <div className="space-y-4">
+                           <div className="flex justify-between items-center text-sm">
+                             <span className="text-zinc-400">Próxima fatura</span>
+                             <span className="font-bold">14 Maio, 2026</span>
+                           </div>
+                           <div className="flex justify-between items-center text-sm">
+                             <span className="text-zinc-400">Valor mensal</span>
+                             <span className="font-bold">€249.00</span>
+                           </div>
+                        </div>
+                      </div>
+                      <div className="p-6 bg-zinc-900/50 rounded-3xl border border-card-border">
+                         <h4 className="font-bold mb-4">Método de Pagamento</h4>
+                         <div className="flex items-center gap-4 p-4 bg-zinc-900 rounded-2xl border border-card-border mb-6">
+                            <div className="w-10 h-6 bg-zinc-800 rounded flex items-center justify-center text-[8px] font-bold">VISA</div>
+                            <div>
+                               <p className="text-xs font-bold">•••• 4429</p>
+                               <p className="text-[10px] text-zinc-500">Expira em 12/28</p>
+                            </div>
+                         </div>
+                         <button className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-bold transition-all">Alterar Cartão</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-4 mt-12 bg-dashboard-bg/80 backdrop-blur-md p-4 rounded-2xl border border-card-border sticky bottom-4 z-10">
+                 <button className="px-8 py-3 rounded-xl bg-zinc-900 border border-card-border text-sm font-semibold hover:bg-zinc-800 transition-colors">Descartar</button>
+                 <button 
+                  onClick={() => alert('Configurações da agência guardadas com sucesso!')}
+                  className="px-8 py-3 rounded-xl bg-brand text-white text-sm font-semibold orange-glow hover:bg-brand-hover transition-colors"
+                 >
+                   Guardar Tudo
+                 </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'copilot' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-8 space-y-8">
+                <div className="glass rounded-3xl p-8 border border-card-border">
+                  <h3 className="text-xl font-bold mb-4">Central de Copiloto IA</h3>
+                  <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
+                    Sua IA está atualmente treinada em 4.2k interações do mercado imobiliário local. 
+                    Ela consegue identificar intenção de compra vs curiosidade em 0.4s.
+                  </p>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="p-6 bg-zinc-900/50 rounded-2xl border border-card-border">
+                       <div className="flex items-center gap-3 mb-4">
+                          <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center text-brand">
+                            <Target size={18} />
+                          </div>
+                          <span className="font-semibold text-sm">Targeting</span>
+                       </div>
+                       <p className="text-xs text-zinc-400">Focado em leads de alta rotatividade em centros urbanos.</p>
+                    </div>
+                    <div className="p-6 bg-zinc-900/50 rounded-2xl border border-card-border">
+                       <div className="flex items-center gap-3 mb-4">
+                          <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center text-brand">
+                            <MessageSquare size={18} />
+                          </div>
+                          <span className="font-semibold text-sm">Tom de Voz</span>
+                       </div>
+                       <p className="text-xs text-zinc-400">Profissional, acolhedor e focado na urgência da oportunidade.</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="glass rounded-3xl p-8 border border-card-border">
+                  <h4 className="font-semibold mb-6">Logs de Actividade AI</h4>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="flex items-center justify-between py-3 border-b border-card-border last:border-0 border-dashed">
+                        <div className="flex items-center gap-4">
+                          <div className="w-2 h-2 bg-green-500 rounded-full" />
+                          <span className="text-xs text-zinc-300">Resposta enviada para Lead #348</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-600">há {i * 2}min</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="lg:col-span-4 space-y-6">
+                <div className="bg-brand/10 border border-brand/20 p-6 rounded-3xl relative overflow-hidden group">
+                  <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-brand/20 blur-3xl rounded-full transition-all group-hover:scale-150" />
+                  <Target className="text-brand mb-4" size={32} />
+                  <h4 className="text-lg font-bold mb-2">Treino em Tempo Real</h4>
+                  <p className="text-xs text-brand/80 mb-6">Submeta os seus scripts de venda favoritos para a sua IA aprender o seu estilo único.</p>
+                  <button 
+                    onClick={() => alert('A carregar base de conhecimento... A IA começará a processar os seus scripts em segundos.')}
+                    className="w-full bg-brand text-white py-3 rounded-xl text-xs font-bold orange-glow hover:bg-brand-hover transition-colors"
+                  >
+                    Treinar Agora
+                  </button>
+                </div>
+                
+                <div className="glass border border-card-border p-6 rounded-3xl">
+                   <h4 className="text-sm font-bold mb-4">Performance AI</h4>
+                   <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-[10px] mb-1 font-bold uppercase">
+                          <span>Acurácia</span>
+                          <span>98%</span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                           <div className="h-full bg-brand w-[98%]" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[10px] mb-1 font-bold uppercase">
+                          <span>Velocidade</span>
+                          <span>99%</span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                           <div className="h-full bg-brand w-[99%]" />
+                        </div>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'recruiter' && (
+            <div className="space-y-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">Recrutamento Inteligente</h3>
+                  <p className="text-zinc-500 text-sm">Expanda a sua equipa com consultores de topo filtrados por IA.</p>
+                </div>
+                <button 
+                  onClick={() => alert('Defina os critérios da vaga e a IA irá filtrar candidatos no LinkedIn e Instagram automaticamente.')}
+                  className="bg-brand px-6 py-3 rounded-xl text-sm font-bold orange-glow flex items-center gap-2 hover:bg-brand-hover transition-colors"
+                >
+                   <Users size={18} />
+                   Abrir Vaga Nova
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <KPICard icon={<Users size={24} />} label="Candidatos" value={leads.filter(l => l.type === 'angariador').length} trend="+12" color="purple" />
+                <KPICard icon={<MessageSquare size={24} />} label="Entrevistas" value={leads.filter(l => l.type === 'angariador' && l.status === 'entrevista').length} trend="Ativas" color="brand" />
+                <KPICard icon={<Target size={24} />} label="Contratados" value={leads.filter(l => l.type === 'angariador' && l.status === 'contratado').length} trend="Total" color="blue" />
+              </div>
+
+              <div className="glass border border-card-border rounded-3xl overflow-hidden">
+                <div className="p-6 border-b border-card-border bg-dashboard-bg/50">
+                  <h4 className="font-bold">Candidatos Recentes</h4>
+                </div>
+                <div className="divide-y divide-card-border">
+                  {leads.filter(l => l.type === 'angariador').map(c => (
+                    <div key={c.id} className="p-6 flex items-center justify-between hover:bg-zinc-800/30 transition-colors">
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-zinc-800 border border-card-border flex items-center justify-center">
+                            <Users className="text-zinc-500" size={20} />
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-sm">{c.name}</h5>
+                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{c.interest}</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-6">
+                          <div className="text-right">
+                             <div className="text-xs font-bold text-brand uppercase">{c.status}</div>
+                             <div className="text-[10px] text-zinc-600">Submetido há 4h</div>
+                          </div>
+                          <button 
+                            onClick={() => { setSelectedLeadId(c.id); setIsChatOpen(true); }}
+                            className="bg-zinc-900 border border-card-border px-4 py-2 rounded-lg text-xs font-bold hover:bg-zinc-800 transition-all"
+                          >
+                            Ver Perfil
+                          </button>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -565,12 +1000,20 @@ function SidebarContent({
   setActiveTab, 
   isDemoActive, 
   setIsDemoActive,
+  settings,
+  agencies,
+  currentAgencyId,
+  setCurrentAgencyId,
   onClose 
 }: { 
   activeTab: string, 
   setActiveTab: (tab: any) => void, 
   isDemoActive: boolean, 
   setIsDemoActive: (val: boolean) => void,
+  settings: any,
+  agencies: any[],
+  currentAgencyId: string,
+  setCurrentAgencyId: (id: string) => void,
   onClose?: () => void
 }) {
   const handleTabChange = (tab: any) => {
@@ -581,13 +1024,21 @@ function SidebarContent({
   return (
     <>
       <div className="p-6 lg:p-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 lg:w-10 lg:h-10 bg-brand rounded-xl flex items-center justify-center orange-glow">
+        <div className="flex items-center gap-3 w-full">
+          <div className="w-8 h-8 lg:w-10 lg:h-10 bg-brand rounded-xl flex items-center justify-center orange-glow shrink-0">
             <Target className="text-white" size={20} />
           </div>
-          <div>
-            <h1 className="font-bold text-base lg:text-lg tracking-tight">FOX RIVER</h1>
-            <p className="text-[8px] lg:text-[10px] text-zinc-500 uppercase tracking-[0.2em] -mt-1">AI PLATFORM</p>
+          <div className="flex-1 min-w-0">
+            <select 
+              value={currentAgencyId}
+              onChange={(e) => setCurrentAgencyId(e.target.value)}
+              className="bg-transparent border-none text-white font-bold text-sm lg:text-base tracking-tight uppercase focus:ring-0 w-full cursor-pointer appearance-none hover:text-brand transition-colors"
+            >
+              {agencies.map(a => (
+                <option key={a.id} value={a.id} className="bg-zinc-900 text-white">{a.name.split(' ')[0]}</option>
+              ))}
+            </select>
+            <p className="text-[8px] lg:text-[10px] text-zinc-500 uppercase tracking-[0.2em] -mt-1">MULTI-TENANT</p>
           </div>
         </div>
         {onClose && (
@@ -619,10 +1070,14 @@ function SidebarContent({
         <div className="pt-6 lg:pt-8 px-4">
           <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold mb-4">Ferramentas AI</p>
           <NavItem 
+            active={activeTab === 'copilot'}
+            onClick={() => handleTabChange('copilot')}
             icon={<MessageSquare size={20} />}
             label="Copiloto"
           />
           <NavItem 
+            active={activeTab === 'recruiter'}
+            onClick={() => handleTabChange('recruiter')}
             icon={<Briefcase size={20} />}
             label="Recrutador"
           />
@@ -645,11 +1100,24 @@ function SidebarContent({
             )} />
           </button>
         </div>
-        <button className="flex items-center gap-3 text-sm text-zinc-400 hover:text-white transition-colors w-full px-2 py-2">
+        <button 
+          onClick={() => handleTabChange('settings')}
+          className={cn(
+            "flex items-center gap-3 text-sm transition-colors w-full px-2 py-2 rounded-xl",
+            activeTab === 'settings' ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white"
+          )}
+        >
           <Settings size={18} />
           Configurações
         </button>
-        <button className="flex items-center gap-3 text-sm text-red-500/80 hover:text-red-500 transition-colors w-full px-2 py-2 mt-2">
+        <button 
+          onClick={() => {
+            if(confirm('Deseja realmente sair da plataforma?')) {
+              window.location.reload();
+            }
+          }}
+          className="flex items-center gap-3 text-sm text-red-500/80 hover:text-red-500 transition-colors w-full px-2 py-2 mt-2"
+        >
           <Power size={18} />
           Sair
         </button>
