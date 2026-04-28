@@ -45,7 +45,7 @@ import {
 } from 'recharts';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Lead, LeadType, LeadStatus, ChatMessage } from './types';
+import { Lead, LeadType, LeadStatus, ChatMessage, STATUS_MAP } from './types';
 import { useDemoMode } from './hooks/useDemoMode';
 import { getAIReply } from './lib/gemini';
 
@@ -101,13 +101,23 @@ const CHART_DATA = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pipelines' | 'crm' | 'settings' | 'copilot' | 'recruiter'>('dashboard');
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pipelines' | 'crm' | 'settings' | 'copilot' | 'recruiter' | 'insights' | 'ranking' | 'forecast'>('dashboard');
+  const [leads, setLeads] = useState<Lead[]>([]); // Will populate in useEffect
   const [isDemoActive, setIsDemoActive] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>({});
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // Feature Flags System
+  const [features, setFeatures] = useState({
+    insights: true,
+    autopilot: true,
+    scoring: true,
+    recrutamento: true,
+    previsao: true,
+    ranking: true
+  });
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -134,6 +144,41 @@ export default function App() {
 
   const [settingsTab, setSettingsTab] = useState<'geral' | 'automação' | 'equipa' | 'planos'>('geral');
 
+  // Initial Data Generation (Realistic)
+  useEffect(() => {
+    const initialLeads: Lead[] = [
+      {
+        id: '1',
+        name: 'João Silva',
+        phone: '+351 912 345 678',
+        origin: 'Instagram',
+        type: 'comprador',
+        interest: 'T2 em Lisboa',
+        status: 'quente',
+        createdAt: new Date(Date.now() - 3600000).toISOString(),
+        score: 88,
+        scoreLabel: '🔥 quente',
+        probability: 78,
+        value: 450000
+      },
+      {
+        id: '2',
+        name: 'Maria Santos',
+        phone: '+351 933 111 222',
+        origin: 'Facebook',
+        type: 'vendedor',
+        interest: 'Moradia em Cascais',
+        status: 'novo',
+        createdAt: new Date(Date.now() - 7200000).toISOString(),
+        score: 65,
+        scoreLabel: '⚠️ morna',
+        probability: 45,
+        value: 1200000
+      }
+    ];
+    setLeads(initialLeads);
+  }, []);
+
   // Sync settings name with current agency for demo purposes
   useEffect(() => {
     const agency = agencies.find(a => a.id === currentAgencyId);
@@ -145,11 +190,15 @@ export default function App() {
   // Handle new lead from Demo Mode or otherwise
   const handleNewLead = useCallback((newLead: Lead) => {
     setLeads(prev => [newLead, ...prev].slice(0, 50));
-    // Auto-reply if demo mode is active
-    if (isDemoActive) {
+    
+    // Auto-reply if demo mode is active and autopilot is ON
+    if (isDemoActive && settings.autoPilot) {
       setTimeout(async () => {
         setIsTyping(true);
-        const reply = await getAIReply(newLead.type, newLead.name, newLead.interest, []);
+        // Simulated delay for realism
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const reply = await getAIReply(newLead.type as any, newLead.name, newLead.interest, []);
         const aiMsg: ChatMessage = {
           id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           sender: 'ai',
@@ -161,11 +210,53 @@ export default function App() {
           [newLead.id]: [...(prev[newLead.id] || []), aiMsg]
         }));
         setIsTyping(false);
-      }, 1500);
+
+        // Notify
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        audio.volume = 0.2;
+        audio.play().catch(() => {});
+      }, 1000);
     }
-  }, [isDemoActive]);
+  }, [isDemoActive, settings.autoPilot]);
 
   useDemoMode(isDemoActive, handleNewLead);
+
+  // Pipeline Evolution Simulation
+  useEffect(() => {
+    if (!isDemoActive || !settings.autoPilot) return;
+
+    const interval = setInterval(() => {
+      setLeads(prev => {
+        if (prev.length === 0) return prev;
+        const randomIndex = Math.floor(Math.random() * prev.length);
+        const lead = prev[randomIndex];
+        
+        // Only move some leads
+        if (Math.random() > 0.7) {
+          const stages = STATUS_MAP[lead.type as any] || STATUS_MAP['angariador'];
+          const currentStageIndex = stages.indexOf(lead.status);
+          
+          if (currentStageIndex < stages.length - 1) {
+            const nextStatus = stages[currentStageIndex + 1];
+            const updatedLead = { 
+              ...lead, 
+              status: nextStatus,
+              score: Math.min(100, (lead.score || 0) + 5),
+              probability: Math.min(100, (lead.probability || 0) + 10)
+            };
+            
+            // Log move
+            console.log(`Pipeline: ${lead.name} moved to ${nextStatus}`);
+            
+            return prev.map((l, i) => i === randomIndex ? updatedLead : l);
+          }
+        }
+        return prev;
+      });
+    }, 15000); // Every 15 seconds try to move someone
+
+    return () => clearInterval(interval);
+  }, [isDemoActive, settings.autoPilot]);
 
   const selectedLead = useMemo(() => leads.find(l => l.id === selectedLeadId), [leads, selectedLeadId]);
 
@@ -228,6 +319,7 @@ export default function App() {
           agencies={agencies}
           currentAgencyId={currentAgencyId}
           setCurrentAgencyId={setCurrentAgencyId}
+          features={features}
         />
       </aside>
 
@@ -258,6 +350,7 @@ export default function App() {
                 currentAgencyId={currentAgencyId}
                 setCurrentAgencyId={setCurrentAgencyId}
                 onClose={() => setIsMobileMenuOpen(false)}
+                features={features}
               />
             </motion.aside>
           </>
@@ -285,6 +378,34 @@ export default function App() {
             )}
           </div>
           <div className="flex items-center gap-3 lg:gap-6">
+            <div className="hidden xl:flex items-center gap-4 bg-zinc-900 px-4 py-1.5 rounded-2xl border border-card-border">
+               <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <Instagram size={14} className="text-pink-500" />
+               </div>
+               <div className="flex items-center gap-2 border-l border-zinc-800 pl-4">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <Facebook size={14} className="text-blue-500" />
+               </div>
+               <div className="flex items-center gap-2 border-l border-zinc-800 pl-4">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <MessageCircle size={14} className="text-green-500" />
+               </div>
+            </div>
+            
+            {features.autopilot && (
+               <button 
+                onClick={() => setSettings({...settings, autoPilot: !settings.autoPilot})}
+                className={cn(
+                  "hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl border transition-all text-xs font-bold",
+                  settings.autoPilot ? "bg-brand/10 border-brand/40 text-brand orange-glow" : "bg-zinc-900 border-card-border text-zinc-500"
+                )}
+               >
+                 {settings.autoPilot ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+                 {settings.autoPilot ? "AUTOPILOT: ON" : "AUTOPILOT: PAUSED"}
+               </button>
+            )}
+
             <div className="relative group hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-hover:text-zinc-300 transition-colors" size={18} />
               <input 
@@ -303,14 +424,35 @@ export default function App() {
           {activeTab === 'dashboard' && (
             <div className="space-y-6 lg:space-y-10">
               {/* KPIs */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-6">
-                <KPICard icon={<TrendingUp size={24} />} label="Leads Hoje" value={kpis.leadsToday} color="brand" trend="+24%" />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 lg:gap-6">
+                <KPICard 
+                  icon={<TrendingUp size={24} />} 
+                  label="Leads Hoje" 
+                  value={kpis.leadsToday} 
+                  color="brand" 
+                  trend="+24%" 
+                />
+                <KPICard 
+                   icon={<Briefcase size={24} />} 
+                   label="Forecast" 
+                   value={`€${(leads.reduce((acc, l) => acc + (l.value || 0) * ((l.probability || 0) / 100), 0) / 1000).toFixed(1)}k`} 
+                   color="green" 
+                   trend="Estimado" 
+                />
                 <KPICard icon={<Target size={24} />} label="Compradores" value={kpis.buyers} color="blue" trend="+8%" />
                 <KPICard icon={<Phone size={24} />} label="Vendedores" value={kpis.sellers} color="green" trend="+12%" />
-                <KPICard icon={<Briefcase size={24} />} label="Angariadores" value={kpis.recruiters} color="purple" trend="+5%" />
-                <div className="hidden lg:block">
-                  <KPICard icon={<TrendingUp size={24} />} label="Conversão" value={kpis.convRate} color="orange" trend="+2.1%" />
-                </div>
+                {features.insights && (
+                   <div className="col-span-2 glass border border-red-500/20 bg-red-500/5 p-4 lg:p-6 rounded-3xl flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-red-500 tracking-widest mb-1">Valor Potencial Perdido</p>
+                        <h4 className="text-xl lg:text-2xl font-bold">€15,200</h4>
+                        <p className="text-[10px] text-zinc-500 mt-1">Leads sem resposta &gt; 24h</p>
+                      </div>
+                      <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                        <Clock size={24} />
+                      </div>
+                   </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
@@ -419,57 +561,248 @@ export default function App() {
           )}
 
           {activeTab === 'crm' && (
-            <div className="glass rounded-2xl lg:rounded-3xl p-4 lg:p-8 border border-card-border overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="text-left text-zinc-500 text-xs uppercase tracking-widest border-b border-card-border">
-                    <th className="pb-4 font-semibold px-4">Lead</th>
-                    <th className="pb-4 font-semibold">Tipo</th>
-                    <th className="pb-4 font-semibold">Estado</th>
-                    <th className="pb-4 font-semibold">Origem</th>
-                    <th className="pb-4 font-semibold">Data</th>
-                    <th className="pb-4 font-semibold text-right px-4">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leads.map(lead => (
-                    <tr key={lead.id} className="group hover:bg-zinc-800/30 transition-colors">
-                      <td className="py-4 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{lead.name}</span>
-                          <span className="text-xs text-zinc-500">{lead.phone}</span>
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        <span className={cn(
-                          "px-2 py-1 rounded text-[10px] font-bold uppercase",
-                          lead.type === 'comprador' ? "bg-blue-500/10 text-blue-400" : 
-                          lead.type === 'vendedor' ? "bg-green-500/10 text-green-400" : "bg-purple-500/10 text-purple-400"
-                        )}>
-                          {lead.type}
-                        </span>
-                      </td>
-                      <td className="py-4">
-                        <span className="text-xs text-zinc-300 capitalize">{lead.status}</span>
-                      </td>
-                      <td className="py-4">
-                        <OriginIcon origin={lead.origin} />
-                      </td>
-                      <td className="py-4 text-xs text-zinc-500">
-                        {new Date(lead.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <button 
-                          onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
-                          className="p-2 text-zinc-500 hover:text-brand transition-colors"
-                        >
-                          <MessageSquare size={18} />
-                        </button>
-                      </td>
+            <div className="space-y-6 lg:space-y-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">Gestão Geral de Leads</h3>
+                  <p className="text-zinc-500 text-sm">Lista completa de todos os contactos centralizados.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button className="p-2 border border-card-border rounded-xl hover:bg-zinc-800 transition-all">
+                    <Filter size={20} />
+                  </button>
+                  <button className="bg-brand text-white px-6 py-2.5 rounded-xl text-sm font-bold orange-glow hover:bg-brand-hover transition-colors">
+                    Exportar CSV
+                  </button>
+                </div>
+              </div>
+
+              <div className="glass border border-card-border rounded-3xl overflow-hidden overflow-x-auto">
+                <table className="w-full text-left min-w-[800px]">
+                  <thead>
+                    <tr className="bg-zinc-900/50 text-[10px] uppercase tracking-widest text-zinc-500 border-b border-card-border">
+                      <th className="p-6">Lead</th>
+                      <th className="p-6">Status</th>
+                      <th className="p-6">Origem</th>
+                      <th className="p-6">Score / Prob.</th>
+                      <th className="p-6">Valor Est.</th>
+                      <th className="p-6 text-right">Acções</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-card-border">
+                    {leads.map((lead) => (
+                      <tr key={lead.id} className="hover:bg-zinc-800/30 transition-colors group">
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-zinc-800 border border-card-border flex items-center justify-center font-bold">
+                              {lead.name[0]}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold">{lead.name}</p>
+                              <p className="text-[10px] text-zinc-500 mt-0.5">{lead.interest}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                           <span className="text-[9px] font-bold uppercase py-1 px-2 rounded bg-zinc-900 border border-card-border">
+                              {lead.status}
+                           </span>
+                        </td>
+                        <td className="p-6">
+                          <div className="flex items-center gap-2">
+                            <OriginIcon origin={lead.origin} />
+                            <span className="text-xs text-zinc-400">{lead.origin}</span>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                                  lead.score! > 75 ? "bg-red-500/10 text-red-500" : 
+                                  lead.score! > 40 ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
+                                )}>
+                                  {lead.scoreLabel} ({lead.score})
+                                </span>
+                              </div>
+                              <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-brand" style={{ width: `${lead.probability}%` }} />
+                              </div>
+                           </div>
+                        </td>
+                        <td className="p-6">
+                           <span className="text-sm font-bold text-brand">€{(lead.value / 1000).toFixed(0)}k</span>
+                        </td>
+                        <td className="p-6 text-right">
+                          <button 
+                            onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
+                            className="p-2 hover:bg-brand/10 hover:text-brand rounded-lg transition-all text-zinc-500"
+                          >
+                            <MessageSquare size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'insights' && (
+            <div className="space-y-10">
+              <header className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">Insights de Performance</h3>
+                  <p className="text-zinc-500 text-sm">Análise detalhada do seu pipeline e eficiência da IA.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                   <div className="bg-green-500/10 text-green-500 px-3 py-1 rounded-full text-[10px] font-bold border border-green-500/20 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      AUTOPILOT ATIVO
+                   </div>
+                </div>
+              </header>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 glass rounded-3xl p-8 border border-card-border">
+                   <h4 className="font-bold mb-6">Eficiência de Resposta (Média)</h4>
+                   <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <BarChart data={CHART_DATA}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f1f23" />
+                            <XAxis dataKey="name" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: '#161618', border: '1px solid #26262A', borderRadius: '12px' }}
+                            />
+                            <Bar dataKey="leads" fill="#E8511A" radius={[4, 4, 0, 0]} />
+                         </BarChart>
+                      </ResponsiveContainer>
+                   </div>
+                </div>
+                <div className="space-y-8">
+                   <div className="glass rounded-3xl p-8 border border-card-border">
+                      <h4 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-6">Tempo de Resposta</h4>
+                      <div className="space-y-6">
+                         <div>
+                            <p className="text-3xl font-bold">0.4s</p>
+                            <p className="text-xs text-zinc-500">Média via Copiloto AI</p>
+                         </div>
+                         <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
+                            <div className="h-full bg-brand w-[85%]" />
+                         </div>
+                         <p className="text-[10px] text-zinc-600">85% mais rápido que a média do mercado local.</p>
+                      </div>
+                   </div>
+                   <div className="glass rounded-3xl p-8 border border-card-border bg-brand/5">
+                      <h4 className="text-sm font-bold uppercase tracking-widest text-brand mb-4">Ação Recomendada</h4>
+                      <p className="text-sm text-zinc-300 leading-relaxed">
+                        Detectamos que 12 leads "compradores" em Lisboa estão sem follow-up há 3 dias. 
+                        <strong> Ativar sequência de re-engagement?</strong>
+                      </p>
+                      <button className="w-full mt-6 py-3 bg-brand text-white rounded-xl text-xs font-bold orange-glow">Executar Agora</button>
+                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'ranking' && (
+            <div className="space-y-8">
+              <header>
+                <h3 className="text-2xl font-bold">Ranking de Consultores</h3>
+                <p className="text-zinc-500 text-sm">Performance em tempo real da sua equipa.</p>
+              </header>
+
+              <div className="glass rounded-3xl border border-card-border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-zinc-900/50 text-[10px] uppercase tracking-widest text-zinc-500 border-b border-card-border">
+                      <th className="p-6">Posição</th>
+                      <th className="p-6">Consultor</th>
+                      <th className="p-6">Conversão</th>
+                      <th className="p-6">Tempo Resp.</th>
+                      <th className="p-6">Volume (€)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-card-border">
+                    {[
+                      { pos: 1, name: 'Carlos Mendes', conv: '18.2%', resp: '12min', vol: '€2.4M' },
+                      { pos: 2, name: 'Ana Silva', conv: '15.4%', resp: '5min', vol: '€1.8M' },
+                      { pos: 3, name: 'João Costa', conv: '12.1%', resp: '45min', vol: '€1.2M' },
+                      { pos: 4, name: 'Marta R.', conv: '9.8%', resp: '2h', vol: '€850k' }
+                    ].map((row) => (
+                      <tr key={row.pos} className="hover:bg-zinc-800/30 transition-colors">
+                        <td className="p-6 font-mono text-zinc-500">#{row.pos}</td>
+                        <td className="p-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold">
+                              {row.name[0]}
+                            </div>
+                            <span className="font-bold">{row.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-6 text-sm font-medium">{row.conv}</td>
+                        <td className="p-6 text-sm text-zinc-400">{row.resp}</td>
+                        <td className="p-6 text-sm font-bold text-brand">{row.vol}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'forecast' && (
+            <div className="space-y-8">
+              <header>
+                <h3 className="text-2xl font-bold">Previsão de Fecho</h3>
+                <p className="text-zinc-500 text-sm">Projecção financeira baseada em IA e Scoring.</p>
+              </header>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 glass rounded-3xl p-8 border border-card-border">
+                   <h4 className="font-bold mb-8">Evolução do Pipeline (€)</h4>
+                   <div className="h-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <AreaChart data={CHART_DATA}>
+                            <defs>
+                              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f1f23" />
+                            <XAxis dataKey="name" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                               contentStyle={{ backgroundColor: '#161618', border: '1px solid #26262A', borderRadius: '12px' }}
+                            />
+                            <Area type="monotone" dataKey="leads" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                         </AreaChart>
+                      </ResponsiveContainer>
+                   </div>
+                </div>
+                <div className="glass rounded-3xl p-8 border border-card-border flex flex-col justify-between">
+                   <div>
+                      <h4 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-6">Próximos 30 Dias</h4>
+                      <p className="text-4xl font-bold mb-2">€42,800</p>
+                      <p className="text-xs text-green-500 font-bold mb-8">+15% vs mês anterior</p>
+                   </div>
+                   <div className="space-y-4">
+                      <div className="p-4 bg-zinc-900 rounded-2xl border border-card-border">
+                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1">Leads em Fecho</p>
+                         <p className="text-lg font-bold">14</p>
+                      </div>
+                      <div className="p-4 bg-zinc-900 rounded-2xl border border-card-border">
+                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1">Probabilidade Média</p>
+                         <p className="text-lg font-bold">68%</p>
+                      </div>
+                   </div>
+                   <button className="w-full mt-8 py-3 border border-card-border rounded-xl text-xs font-bold hover:bg-zinc-800 transition-all">Ver Relatório Completo</button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1004,7 +1337,8 @@ function SidebarContent({
   agencies,
   currentAgencyId,
   setCurrentAgencyId,
-  onClose 
+  onClose,
+  features
 }: { 
   activeTab: string, 
   setActiveTab: (tab: any) => void, 
@@ -1014,7 +1348,8 @@ function SidebarContent({
   agencies: any[],
   currentAgencyId: string,
   setCurrentAgencyId: (id: string) => void,
-  onClose?: () => void
+  onClose?: () => void,
+  features: any
 }) {
   const handleTabChange = (tab: any) => {
     setActiveTab(tab);
@@ -1055,10 +1390,18 @@ function SidebarContent({
           icon={<LayoutDashboard size={20} />}
           label="Dashboard"
         />
+        {features.insights && (
+          <NavItem 
+            active={activeTab === 'insights'} 
+            onClick={() => handleTabChange('insights')}
+            icon={<TrendingUp size={20} />}
+            label="Insights"
+          />
+        )}
         <NavItem 
           active={activeTab === 'pipelines'} 
           onClick={() => handleTabChange('pipelines')}
-          icon={<TrendingUp size={20} />}
+          icon={<Briefcase size={20} />}
           label="Pipelines"
         />
         <NavItem 
@@ -1067,6 +1410,15 @@ function SidebarContent({
           icon={<Users size={20} />}
           label="CRM"
         />
+        {features.ranking && (
+          <NavItem 
+            active={activeTab === 'ranking'} 
+            onClick={() => handleTabChange('ranking')}
+            icon={<Target size={20} />}
+            label="Ranking"
+          />
+        )}
+
         <div className="pt-6 lg:pt-8 px-4">
           <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold mb-4">Ferramentas AI</p>
           <NavItem 
@@ -1075,12 +1427,22 @@ function SidebarContent({
             icon={<MessageSquare size={20} />}
             label="Copiloto"
           />
-          <NavItem 
-            active={activeTab === 'recruiter'}
-            onClick={() => handleTabChange('recruiter')}
-            icon={<Briefcase size={20} />}
-            label="Recrutador"
-          />
+          {features.recrutamento && (
+             <NavItem 
+               active={activeTab === 'recruiter'}
+               onClick={() => handleTabChange('recruiter')}
+               icon={<Target size={20} />}
+               label="Recrutador"
+             />
+          )}
+          {features.previsao && (
+             <NavItem 
+               active={activeTab === 'forecast'}
+               onClick={() => handleTabChange('forecast')}
+               icon={<TrendingUp size={20} />}
+               label="Previsão"
+             />
+          )}
         </div>
       </nav>
 
@@ -1214,12 +1576,38 @@ function PipelineGroup({ title, leads, stages, onSelectLead }: { title: string, 
                     >
                       <div className="flex items-center justify-between mb-1.5 lg:mb-2">
                         <span className="text-sm font-semibold truncate max-w-[120px]">{lead.name}</span>
-                        <OriginIcon origin={lead.origin} />
+                        <div className="flex items-center gap-1.5">
+                           {lead.score && (
+                             <span className="text-[8px] font-bold bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">
+                               {lead.score}
+                             </span>
+                           )}
+                           <OriginIcon origin={lead.origin} />
+                        </div>
                       </div>
                       <p className="text-[10px] text-zinc-500 mb-2 lg:mb-3 line-clamp-1">{lead.interest}</p>
+                      
+                      {lead.scoreLabel && (
+                        <div className="flex items-center gap-2 mb-3">
+                           <span className={cn(
+                             "text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter",
+                             lead.score! > 75 ? "bg-red-500/10 text-red-500" : 
+                             lead.score! > 40 ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
+                           )}>
+                             {lead.scoreLabel}
+                           </span>
+                           {lead.probability && (
+                             <span className="text-[9px] text-zinc-600 font-medium">Prob: {lead.probability}%</span>
+                           )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
                         <span className="text-[9px] lg:text-[10px] text-zinc-600">{new Date(lead.createdAt).toLocaleDateString()}</span>
                         <div className="flex">
+                           {lead.value && (
+                             <span className="text-[10px] font-bold text-zinc-300 mr-2">€{(lead.value/1000).toFixed(0)}k</span>
+                           )}
                           <div className="w-5 h-5 rounded-full bg-brand flex items-center justify-center orange-glow">
                             <Target size={10} className="text-white" />
                           </div>

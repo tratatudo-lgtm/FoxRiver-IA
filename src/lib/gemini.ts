@@ -34,34 +34,28 @@ export async function getAIReply(leadType: 'comprador' | 'vendedor' | 'angariado
     Se for Angariador: Experiência e zona.
   `;
 
-  let contents = chatHistory.map(h => ({
+  let history = chatHistory.map(h => ({
     role: h.sender === 'ai' ? 'model' : 'user',
     parts: [{ text: h.text }]
   }));
 
-  if (contents.length === 0 || contents[0].role === 'model') {
-    contents.unshift({ 
+  if (history.length === 0 || history[0].role === 'model') {
+    history.unshift({ 
       role: 'user', 
       parts: [{ text: `Olá, sou o ${leadName}. Tenho interesse em: ${leadInterest}` }] 
     });
   }
 
   try {
-    const model = ai.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: systemInstructions
+    const response = await ai.models.generateContent({ 
+      model: "gemini-3.1-flash-preview",
+      contents: history,
+      config: {
+        systemInstruction: systemInstructions
+      }
     });
 
-    const conversation = model.startChat({
-      history: contents.slice(0, -1).map(c => ({
-        role: c.role === 'model' ? 'model' : 'user',
-        parts: [{ text: (c.parts[0] as any).text }]
-      }))
-    });
-
-    const lastMsg = contents[contents.length - 1];
-    const result = await conversation.sendMessage((lastMsg.parts[0] as any).text);
-    return result.response.text();
+    return response.text || getFallbackReply(leadType);
   } catch (error) {
     console.error("Gemini API Error Detail:", error);
     return getFallbackReply(leadType);
