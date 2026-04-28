@@ -30,7 +30,18 @@ import {
   X,
   PlayCircle,
   PauseCircle,
-  Filter
+  Filter,
+  Building2,
+  Euro,
+  Scale,
+  MapPin,
+  ShieldCheck,
+  Zap,
+  Activity,
+  Cpu,
+  BarChart3,
+  CreditCard,
+  PieChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -42,11 +53,13 @@ import {
   Tooltip, 
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  Cell,
+  Pie
 } from 'recharts';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Lead, LeadType, LeadStatus, ChatMessage, STATUS_MAP } from './types';
+import { Lead, LeadType, LeadStatus, ChatMessage, Property, BusinessTraspass, MortgageProcess, STATUS_MAP } from './types';
 import { useDemoMode } from './hooks/useDemoMode';
 import { getAIReply } from './lib/gemini';
 
@@ -132,9 +145,43 @@ const CHART_DATA = [
   { name: 'Dom', leads: 20 },
 ];
 
+// War Room Mock Data - Northern Portugal Focus
+const INITIAL_PROPERTIES: Property[] = [
+  { id: 'p1', title: 'Moradia T4 Premium', type: 'Moradia', location: 'Braga', price: 650000, status: 'disponível', sqm: 320, beds: 4 },
+  { id: 'p2', title: 'Apartamento T3 Vista Rio', type: 'Apartamento', location: 'Viana do Castelo', price: 320000, status: 'em negociação', sqm: 145, beds: 3 },
+  { id: 'p3', title: 'Solar Histórico', type: 'Moradia', location: 'Caminha', price: 1200000, status: 'disponível', sqm: 550, beds: 6 },
+  { id: 'p4', title: 'Penthouse Central', type: 'Apartamento', location: 'Braga', price: 480000, status: 'reservado', sqm: 180, beds: 3 },
+  { id: 'p5', title: 'Loteamento Industrial', type: 'Terreno', location: 'Valença', price: 250000, status: 'disponível', sqm: 2500 },
+];
+
+const INITIAL_BUSINESSES: BusinessTraspass[] = [
+  { id: 'b1', title: 'Restaurante Tradicional', category: 'Restaurante', location: 'Braga', price: 120000, revenue: 15000, status: 'disponível' },
+  { id: 'b2', title: 'Café & Pastelaria', category: 'Café', location: 'Viana do Castelo', price: 45000, revenue: 8000, status: 'negociação' },
+  { id: 'b3', title: 'Alojamento Local Rural', category: 'Alojamento Local', location: 'Monção', price: 280000, revenue: 45000, status: 'disponível' },
+  { id: 'b4', title: 'Mini Mercado Prime', category: 'Mini Mercado', location: 'Braga', price: 85000, revenue: 22000, status: 'disponível' },
+];
+
+const INITIAL_MORTGAGES: MortgageProcess[] = [
+  { id: 'm1', clientName: 'Ricardo Pereira', amount: 285000, status: 'Pré-Aprovado', probability: 95, bank: 'CGD' },
+  { id: 'm2', clientName: 'Ana Rodrigues', amount: 120000, status: 'Avaliação', probability: 70, bank: 'Santander' },
+  { id: 'm3', clientName: 'Miguel Sousa', amount: 450000, status: 'Análise', probability: 45, bank: 'BPI' },
+  { id: 'm4', clientName: 'Sandra Gomes', amount: 210000, status: 'Aprovado', probability: 100, bank: 'Novo Banco' },
+];
+
+const REGIONAL_HEATMAP = [
+  { name: 'Braga', value: 85, status: 'HOT' },
+  { name: 'Viana', value: 65, status: 'ACTIVE' },
+  { name: 'Caminha', value: 45, status: 'MEDIUM' },
+  { name: 'Valença', value: 30, status: 'LOW' },
+  { name: 'Monção', value: 55, status: 'GROWTH' },
+];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pipelines' | 'crm' | 'settings' | 'copilot' | 'recruiter' | 'insights' | 'ranking' | 'forecast'>('dashboard');
-  const [leads, setLeads] = useState<Lead[]>([]); // Will populate in useEffect
+  const [activeTab, setActiveTab] = useState<'war-room' | 'imoveis' | 'negocios' | 'credito' | 'leads' | 'settings'>('war-room');
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [properties, setProperties] = useState<Property[]>(INITIAL_PROPERTIES);
+  const [businesses, setBusinesses] = useState<BusinessTraspass[]>(INITIAL_BUSINESSES);
+  const [mortgages, setMortgages] = useState<MortgageProcess[]>(INITIAL_MORTGAGES);
   const [isDemoActive, setIsDemoActive] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>({});
@@ -406,7 +453,11 @@ export default function App() {
               <LayoutDashboard size={24} />
             </button>
             <h2 className="text-lg lg:text-xl font-semibold capitalize truncate">
-              {activeTab === 'crm' ? 'Gestão de Leads' : activeTab}
+              {activeTab === 'war-room' ? 'War Room Executivo' : 
+               activeTab === 'imoveis' ? 'Portfolio Imobiliário' :
+               activeTab === 'negocios' ? 'Oportunidades' :
+               activeTab === 'credito' ? 'Gestão de Crédito' :
+               activeTab === 'leads' ? 'Pipeline & Leads' : activeTab}
             </h2>
             {isDemoActive && (
               <div className="flex items-center gap-2 bg-brand/10 px-2 lg:px-3 py-1 rounded-full border border-brand/20">
@@ -459,432 +510,306 @@ export default function App() {
         </header>
 
         <div className="p-4 lg:p-10 max-w-7xl mx-auto">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-16 lg:space-y-24 pt-10">
-              {/* Ultra Minimal Hero */}
-              <div className="text-center space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5 backdrop-blur-md">
-                   <div className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] font-mono">Live Forecast Portfolio</span>
-                </div>
-                
-                <h1 className="text-7xl lg:text-[10rem] font-bold tracking-tighter text-gradient leading-none">
-                  <AnimatedCounter 
-                    value={leads.reduce((acc, l) => acc + (l.value || 0) * ((l.probability || 0) / 100), 0)} 
-                    prefix="€" 
-                  />
-                </h1>
-                
-                <div className="flex flex-col items-center gap-6">
-                  <p className="text-zinc-500 text-sm lg:text-lg max-w-2xl mx-auto leading-relaxed font-light">
-                    Análise em tempo real de ativos sob gestão Fox River Engine. <br/>
-                    <span className="text-white font-medium">98.2% de precisão</span> nas projeções de fecho para o trimestre corrente.
-                  </p>
-                  
-                  <div className="flex items-center gap-8 pt-6">
-                    <div className="text-center">
-                       <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 font-mono">Volume</p>
-                       <p className="text-xl font-bold">{leads.length}</p>
+          {activeTab === 'war-room' && (
+            <div className="space-y-12 animate-in fade-in duration-700">
+              {/* TOP STATUS BAR */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <MetricCard 
+                  label="PROJEÇÃO TRIMESTRAL" 
+                  value={leads.reduce((acc, l) => acc + (l.value || 0) * ((l.probability || 0) / 100), 0)} 
+                  prefix="€"
+                  trend="+12.4%"
+                  icon={<Cpu className="text-brand" size={16} />}
+                />
+                <MetricCard 
+                  label="ATIVOS IMOBILIÁRIOS" 
+                  value={properties.reduce((acc, p) => acc + p.price, 0)} 
+                  prefix="€"
+                  trend="Braga/Viana"
+                  icon={<Building2 className="text-zinc-400" size={16} />}
+                />
+                <MetricCard 
+                  label="NEGÓCIOS EM TRÂNSITO" 
+                  value={businesses.reduce((acc, b) => acc + b.price, 0)} 
+                  prefix="€"
+                  trend="Oportunidade"
+                  icon={<Briefcase className="text-zinc-400" size={16} />}
+                />
+                <MetricCard 
+                  label="CRÉDITO SOB ANÁLISE" 
+                  value={mortgages.reduce((acc, m) => acc + m.amount, 0)} 
+                  prefix="€"
+                  trend="High Probability"
+                  icon={<CreditCard className="text-zinc-400" size={16} />}
+                />
+              </div>
+
+              {/* MAIN WAR ROOM GRID */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* COLUMN 1: Operational Core (Imóveis + Negócios) */}
+                <div className="lg:col-span-8 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <ModuleQuadrant 
+                        title="IMÓVEIS ALTO MINHO" 
+                        icon={<Building2 size={18} />}
+                        items={properties.slice(0, 4).map(p => ({
+                           id: p.id,
+                           title: p.title,
+                           meta: `${p.location} • ${p.type}`,
+                           value: `€${(p.price/1000).toFixed(0)}k`,
+                           status: p.status
+                        }))}
+                     />
+                     <ModuleQuadrant 
+                        title="NEGÓCIOS EM CURSO" 
+                        icon={<Briefcase size={18} />}
+                        items={businesses.slice(0, 4).map(b => ({
+                           id: b.id,
+                           title: b.title,
+                           meta: `${b.location} • ${b.category}`,
+                           value: `€${(b.price/1000).toFixed(0)}k`,
+                           status: b.status
+                        }))}
+                     />
+                  </div>
+
+                  {/* REGIONAL HEATMAP / PERFORMANCE */}
+                  <div className="glass-premium rounded-[2.5rem] p-10 border border-white/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-10 opacity-5">
+                       <MapPin size={150} />
                     </div>
-                    <div className="w-px h-10 bg-white/5" />
-                    <div className="text-center">
-                       <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 font-mono">Conversão</p>
-                       <p className="text-xl font-bold text-green-500">12.4%</p>
+                    <div className="flex items-center justify-between mb-10 relative z-10">
+                       <div>
+                          <h3 className="text-xl font-bold tracking-tight">Estratégia Regional Norte</h3>
+                          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono mt-1">Nível de actividade detectada por IA</p>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <Activity size={14} className="text-brand animate-pulse" />
+                          <span className="text-[10px] font-bold text-zinc-400 font-mono">LIVE_SCANNING</span>
+                       </div>
                     </div>
-                    <div className="w-px h-10 bg-white/5" />
-                    <div className="text-center">
-                       <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 font-mono">AI Efficiency</p>
-                       <p className="text-xl font-bold text-brand">99.1%</p>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-6 relative z-10">
+                       {REGIONAL_HEATMAP.map(region => (
+                         <div key={region.name} className="space-y-4">
+                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                               <motion.div 
+                                 initial={{ width: 0 }}
+                                 animate={{ width: `${region.value}%` }}
+                                 className={cn(
+                                   "h-full rounded-full transition-colors",
+                                   region.status === 'HOT' ? "bg-red-500" :
+                                   region.status === 'ACTIVE' ? "bg-brand" : "bg-zinc-700"
+                                 )}
+                               />
+                            </div>
+                            <div>
+                               <p className="text-xs font-bold">{region.name}</p>
+                               <p className={cn(
+                                 "text-[9px] font-bold uppercase tracking-widest",
+                                 region.status === 'HOT' ? "text-red-500" : "text-zinc-600"
+                               )}>{region.status}</p>
+                            </div>
+                         </div>
+                       ))}
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Minimal Horizontal Flow */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-0 relative">
-                 <div className="hidden lg:block absolute top-1/2 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-brand/20 to-transparent -translate-y-1/2" />
-                 
-                 <div className="glass p-10 rounded-[2.5rem] border border-white/5 text-center relative z-10 bg-dashboard-bg">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 font-mono">01. Capture</p>
-                    <div className="w-14 h-14 rounded-full bg-brand/5 border border-brand/20 flex items-center justify-center mx-auto mb-8 text-brand">
-                       <Target size={28} />
-                    </div>
-                    <h3 className="text-xl font-bold mb-3 tracking-tight">Lead Omnicanal</h3>
-                    <p className="text-xs text-zinc-500 font-light leading-relaxed">Captação instantânea via Instagram, WhatsApp e Facebook.</p>
-                 </div>
+                {/* COLUMN 2: COMMAND FEED + MORTGAGE */}
+                <div className="lg:col-span-4 space-y-8">
+                   <ModuleQuadrant 
+                      title="CRÉDITO HABITAÇÃO" 
+                      icon={<CreditCard size={18} />}
+                      variant="dark"
+                      items={mortgages.map(m => ({
+                         id: m.id,
+                         title: m.clientName,
+                         meta: `${m.bank} • Prob: ${m.probability}%`,
+                         value: `€${(m.amount/1000).toFixed(0)}k`,
+                         status: m.status.toLowerCase() as any
+                      }))}
+                   />
 
-                 <div className="glass-premium p-10 rounded-[2.5rem] border border-white/10 text-center relative z-10 bg-dashboard-bg lg:-mx-6 lg:scale-110 shadow-2xl">
-                    <p className="text-[10px] font-bold text-brand uppercase tracking-widest mb-6 font-mono">02. Intelligence</p>
-                    <div className="w-14 h-14 rounded-full bg-brand flex items-center justify-center mx-auto mb-8 text-white orange-glow">
-                       <MessageSquare size={28} />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-3 tracking-tight text-gradient">Fox River Engine</h3>
-                    <p className="text-sm text-zinc-300 font-light px-4 leading-relaxed">Qualificação autónoma, scoring preditivo e gestão de CRM 24/7 sem intervenção humana.</p>
-                 </div>
-
-                 <div className="glass p-10 rounded-[2.5rem] border border-white/5 text-center relative z-10 bg-dashboard-bg">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 font-mono">03. Closing</p>
-                    <div className="w-14 h-14 rounded-full bg-green-500/5 border border-green-500/20 flex items-center justify-center mx-auto mb-8 text-green-500">
-                       <TrendingUp size={28} />
-                    </div>
-                    <h3 className="text-xl font-bold mb-3 tracking-tight">Monetização</h3>
-                    <p className="text-xs text-zinc-500 font-light leading-relaxed">Conversão de leads em contratos angariados e fechos validados.</p>
-                 </div>
-              </div>
-
-              {/* Advanced Terminal Feed & Premium Banner */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 pt-10 pb-20">
-                <div className="lg:col-span-8">
-                   <div className="flex items-center justify-between mb-10 px-2">
-                      <div className="flex items-center gap-3">
-                         <div className="w-2 h-2 rounded-full bg-brand animate-pulse-soft" />
-                         <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 font-mono">System Live Stream</h3>
+                   <div className="glass p-8 rounded-[2.5rem] border border-white/5 h-full min-h-[400px] flex flex-col bg-zinc-950/50">
+                      <div className="flex items-center justify-between mb-8">
+                         <div className="flex items-center gap-2">
+                            <Cpu size={16} className="text-brand" />
+                            <h3 className="text-xs font-bold uppercase tracking-[0.2em] font-mono">AI Command Stream</h3>
+                         </div>
+                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                       </div>
-                      <div className="text-[10px] text-zinc-700 font-mono">SECURE_SYNC_ENGAGED // AES_256</div>
-                   </div>
-                   
-                   <div className="space-y-5 font-mono overflow-hidden">
-                      <AnimatePresence mode="popLayout">
-                        {demoEvents.map((event, idx) => (
-                          <motion.div
-                            key={event.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="flex items-start gap-4 text-[11px] group"
-                          >
-                             <span className="text-zinc-800 shrink-0">[{event.time.toLocaleTimeString([], { hour12: false })}]</span>
-                             <div className={cn(
-                               "px-3 py-1 rounded border terminal-line transition-all group-hover:border-white/10",
-                               event.type === 'success' ? "border-green-500/10 bg-green-500/5 text-green-400" :
-                               event.type === 'alert' ? "border-red-500/10 bg-red-500/5 text-red-400" :
-                               "border-white/5 bg-white/5 text-zinc-400"
-                             )}>
-                                <span className="opacity-30 mr-3">#</span>
-                                {event.text}
-                             </div>
-                             <span className="text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity ml-auto tracking-tighter">PID_{100 + idx}</span>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
+                      
+                      <div className="flex-1 space-y-4 overflow-y-auto pr-1 font-mono text-[10px]">
+                         <AnimatePresence mode="popLayout">
+                            {demoEvents.map((event) => (
+                              <motion.div
+                                key={event.id}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="flex gap-3 text-zinc-500 border-l border-white/5 pl-3 py-1"
+                              >
+                                 <span className="text-zinc-800">[{event.time.toLocaleTimeString([], { hour12: false })}]</span>
+                                 <span className={cn(
+                                   "flex-1",
+                                   event.type === 'success' ? "text-green-500/80" :
+                                   event.type === 'alert' ? "text-red-500/80" : ""
+                                 )}>{event.text}</span>
+                              </motion.div>
+                            ))}
+                         </AnimatePresence>
+                         {demoEvents.length === 0 && <p className="text-zinc-800 italic">SYSTEM_IDLE... AWAITING_INPUT</p>}
+                      </div>
                    </div>
                 </div>
-
-                <div className="lg:col-span-4 glass-premium p-12 rounded-[3.5rem] border border-white/5 flex flex-col justify-between overflow-hidden relative group min-h-[400px]">
-                   <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand/10 blur-[120px] rounded-full group-hover:bg-brand/20 transition-all duration-1000 animate-pulse-soft" />
-                   
-                   <div className="relative z-10">
-                      <p className="text-brand text-[10px] font-bold uppercase tracking-[0.3em] mb-6 font-mono">Market Alert</p>
-                      <h4 className="text-4xl font-bold tracking-tight mb-6 leading-tight">€15.2k em Capital em Risco</h4>
-                      <p className="text-zinc-500 text-sm leading-relaxed font-light">
-                        Detectamos <span className="text-white font-medium">8 leads subsequentes</span> com tempo de resposta superior a 24h. 
-                        Recomendamos ativação imediata do piloto automático para mitigar desvalorização do portfolio.
-                      </p>
-                   </div>
-                   
-                   <div className="relative z-10 pt-10">
-                      <button className="w-full py-6 bg-white text-black rounded-2xl text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-zinc-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                        Ativar Autopilot Fox River
-                      </button>
-                   </div>
-                </div>
-              </div>
-
-              {/* Premium Activation Banner */}
-              <div className="flex flex-col items-center justify-center py-20 space-y-8 glass-premium rounded-[3rem] border border-brand/20 relative overflow-hidden">
-                 <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(232,81,26,0.1)_0%,transparent_70%)]" />
-                 <div className="text-center space-y-4 relative z-10">
-                   <h2 className="text-3xl lg:text-5xl font-bold tracking-tight">Pronto para Dominar o Mercado?</h2>
-                   <p className="text-zinc-500 max-w-xl mx-auto">
-                     A Fox River AI já captou e qualificou leads que valem mais de <span className="text-white font-bold">€150.000</span> nesta demonstração. 
-                     Não deixe o capital escapar pelos dedos.
-                   </p>
-                 </div>
-                 <div className="flex flex-col sm:flex-row gap-6 relative z-10 w-full max-w-md px-6">
-                    <button 
-                      onClick={() => alert("Parabéns! A sua conta Fox River Premium está agora a ser provisionada. Prepare-se para o próximo nível.")}
-                      className="flex-1 py-5 bg-brand text-white rounded-2xl text-base font-bold shadow-[0_0_50px_rgba(232,81,26,0.2)] hover:scale-105 transition-all"
-                    >
-                      ATIVAR AGÊNCIA FULL (PRO)
-                    </button>
-                    <button className="flex-1 py-5 bg-zinc-900 border border-white/5 text-zinc-400 rounded-2xl text-sm font-bold hover:bg-zinc-800 transition-all">
-                      Falar com Consultor
-                    </button>
-                 </div>
-                 <div className="flex items-center gap-6 pt-4 relative z-10 opacity-50 grayscale hover:grayscale-0 transition-all">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Remax_logo.svg" className="h-6" alt="Remax" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Century_21_logo.svg" className="h-4" alt="C21" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/Zillow_logo.svg" className="h-5" alt="Zillow" />
-                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'pipelines' && (
-            <div className="space-y-12">
-              <PipelineGroup
-                title="Compradores"
-                leads={leads.filter(l => l.type === 'comprador')}
-                stages={['fria', 'morna', 'quente']}
-                onSelectLead={(id) => { setSelectedLeadId(id); setIsChatOpen(true); }}
-              />
-              <PipelineGroup
-                title="Vendedores"
-                leads={leads.filter(l => l.type === 'vendedor')}
-                stages={['novo', 'avaliação', 'angariado']}
-                onSelectLead={(id) => { setSelectedLeadId(id); setIsChatOpen(true); }}
-              />
-              <PipelineGroup
-                title="Angariadores"
-                leads={leads.filter(l => l.type === 'angariador')}
-                stages={['candidato', 'entrevista', 'contratado']}
-                onSelectLead={(id) => { setSelectedLeadId(id); setIsChatOpen(true); }}
-              />
+          {activeTab === 'imoveis' && (
+            <div className="space-y-12 animate-in fade-in duration-700">
+               <div className="flex items-center justify-between">
+                  <div>
+                     <h3 className="text-3xl font-bold tracking-tight">Portfolio Imobiliário</h3>
+                     <p className="text-sm text-zinc-500 mt-1 font-mono">Alto Minho & Norte Litoral // Real-time Units</p>
+                  </div>
+                  <div className="flex gap-4">
+                     <button className="px-6 py-2 bg-zinc-900 border border-white/5 rounded-xl text-xs font-bold text-zinc-400 hover:text-white transition-all">Filtrar</button>
+                     <button className="px-6 py-2 bg-brand text-white rounded-xl text-xs font-bold orange-glow">+ Novo Ativo</button>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {properties.map(p => (
+                     <PropertyCard key={p.id} property={p} />
+                  ))}
+               </div>
             </div>
           )}
 
-          {activeTab === 'crm' && (
-            <div className="space-y-6 lg:space-y-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">Gestão Geral de Leads</h3>
-                  <p className="text-zinc-500 text-sm">Lista completa de todos os contactos centralizados.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button className="p-2 border border-card-border rounded-xl hover:bg-zinc-800 transition-all">
-                    <Filter size={20} />
-                  </button>
-                  <button className="bg-brand text-white px-6 py-2.5 rounded-xl text-sm font-bold orange-glow hover:bg-brand-hover transition-colors">
-                    Exportar CSV
-                  </button>
-                </div>
-              </div>
+          {activeTab === 'negocios' && (
+            <div className="space-y-12 animate-in fade-in duration-700">
+               <div className="flex items-center justify-between">
+                  <div>
+                     <h3 className="text-3xl font-bold tracking-tight">Oportunidades de Negócio</h3>
+                     <p className="text-sm text-zinc-500 mt-1 font-mono">Trespasse & Ativos Comerciais</p>
+                  </div>
+               </div>
 
-              <div className="glass border border-card-border rounded-3xl overflow-hidden overflow-x-auto">
-                <table className="w-full text-left min-w-[800px]">
-                  <thead>
-                    <tr className="bg-zinc-900/50 text-[10px] uppercase tracking-widest text-zinc-500 border-b border-card-border">
-                      <th className="p-6">Lead</th>
-                      <th className="p-6">Status</th>
-                      <th className="p-6">Origem</th>
-                      <th className="p-6">Score / Prob.</th>
-                      <th className="p-6">Valor Est.</th>
-                      <th className="p-6 text-right">Acções</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-card-border">
-                    {leads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-zinc-800/30 transition-colors group">
-                        <td className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-zinc-800 border border-card-border flex items-center justify-center font-bold">
-                              {lead.name[0]}
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold">{lead.name}</p>
-                              <p className="text-[10px] text-zinc-500 mt-0.5">{lead.interest}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-6">
-                           <span className="text-[9px] font-bold uppercase py-1 px-2 rounded bg-zinc-900 border border-card-border">
-                              {lead.status}
-                           </span>
-                        </td>
-                        <td className="p-6">
-                          <div className="flex items-center gap-2">
-                            <OriginIcon origin={lead.origin} />
-                            <span className="text-xs text-zinc-400">{lead.origin}</span>
-                          </div>
-                        </td>
-                        <td className="p-6">
-                           <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className={cn(
-                                  "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                                  lead.score! > 75 ? "bg-red-500/10 text-red-500" : 
-                                  lead.score! > 40 ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
-                                )}>
-                                  {lead.scoreLabel} ({lead.score})
-                                </span>
-                              </div>
-                              <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-brand" style={{ width: `${lead.probability}%` }} />
-                              </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  {businesses.map(b => (
+                     <BusinessCard key={b.id} business={b} />
+                  ))}
+               </div>
+            </div>
+          )}
+
+          {activeTab === 'credito' && (
+            <div className="space-y-12 animate-in fade-in duration-700">
+               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                  <div className="lg:col-span-2 space-y-8">
+                     <div className="glass-premium p-10 rounded-[2.5rem] border border-white/5 bg-dashboard-bg">
+                        <div className="flex items-center justify-between mb-10">
+                           <h3 className="text-xl font-bold">Motor de Crédito Integrado</h3>
+                           <span className="px-3 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold rounded-full border border-green-500/20">LIVE_BRIDGE_ACTIVE</span>
+                        </div>
+                        <div className="space-y-6">
+                           {mortgages.map(m => (
+                              <MortgageRow key={m.id} mortgage={m} />
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="space-y-8">
+                     <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6 font-mono">Performance Crédito</h4>
+                        <div className="space-y-8">
+                           <div>
+                              <p className="text-[10px] text-zinc-500 uppercase font-mono mb-2">Volume Pré-Aprovado</p>
+                              <p className="text-4xl font-bold">€{(mortgages.reduce((acc, m) => acc + (m.status === 'Pré-Aprovado' || m.status === 'Aprovado' ? m.amount : 0), 0) / 1000000).toFixed(2)}M</p>
                            </div>
-                        </td>
-                        <td className="p-6">
-                           <span className="text-sm font-bold text-brand">€{(lead.value / 1000).toFixed(0)}k</span>
-                        </td>
-                        <td className="p-6 text-right">
-                          <button 
-                            onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
-                            className="p-2 hover:bg-brand/10 hover:text-brand rounded-lg transition-all text-zinc-500"
-                          >
-                            <MessageSquare size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                           <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-brand w-[78%]" />
+                           </div>
+                           <p className="text-[10px] text-zinc-600 leading-relaxed italic">
+                              78% dos processos em análise têm probabilidade de aprovação superior a 85% segundo o scoring Fox Engine.
+                           </p>
+                        </div>
+                     </div>
+
+                     <div className="glass p-8 rounded-[2.5rem] border border-brand/20 bg-brand/5">
+                        <ShieldCheck className="text-brand mb-6" size={32} />
+                        <h4 className="text-lg font-bold mb-3">Compliance & Risco</h4>
+                        <p className="text-sm text-zinc-400 font-light leading-relaxed">
+                           Todos os processos são triados automaticamente pela IA contra critérios de risco bancário (DSTI, LTV).
+                        </p>
+                        <button className="w-full mt-8 py-4 bg-zinc-900 border border-white/5 text-xs font-bold rounded-2xl hover:bg-zinc-800 transition-all">Configurar Filtros de Risco</button>
+                     </div>
+                  </div>
+               </div>
             </div>
           )}
 
-          {activeTab === 'insights' && (
-            <div className="space-y-10">
-              <header className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">Insights de Performance</h3>
-                  <p className="text-zinc-500 text-sm">Análise detalhada do seu pipeline e eficiência da IA.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                   <div className="bg-green-500/10 text-green-500 px-3 py-1 rounded-full text-[10px] font-bold border border-green-500/20 flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                      AUTOPILOT ATIVO
-                   </div>
-                </div>
-              </header>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 glass rounded-3xl p-8 border border-card-border">
-                   <h4 className="font-bold mb-6">Eficiência de Resposta (Média)</h4>
-                   <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                         <BarChart data={CHART_DATA}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f1f23" />
-                            <XAxis dataKey="name" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                              contentStyle={{ backgroundColor: '#161618', border: '1px solid #26262A', borderRadius: '12px' }}
-                            />
-                            <Bar dataKey="leads" fill="#E8511A" radius={[4, 4, 0, 0]} />
-                         </BarChart>
-                      </ResponsiveContainer>
-                   </div>
-                </div>
-                <div className="space-y-8">
-                   <div className="glass rounded-3xl p-8 border border-card-border">
-                      <h4 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-6">Tempo de Resposta</h4>
-                      <div className="space-y-6">
-                         <div>
-                            <p className="text-3xl font-bold">0.4s</p>
-                            <p className="text-xs text-zinc-500">Média via Copiloto AI</p>
-                         </div>
-                         <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
-                            <div className="h-full bg-brand w-[85%]" />
-                         </div>
-                         <p className="text-[10px] text-zinc-600">85% mais rápido que a média do mercado local.</p>
-                      </div>
-                   </div>
-                   <div className="glass rounded-3xl p-8 border border-card-border bg-brand/5">
-                      <h4 className="text-sm font-bold uppercase tracking-widest text-brand mb-4">Ação Recomendada</h4>
-                      <p className="text-sm text-zinc-300 leading-relaxed">
-                        Detectamos que 12 leads "compradores" em Lisboa estão sem follow-up há 3 dias. 
-                        <strong> Ativar sequência de re-engagement?</strong>
-                      </p>
-                      <button className="w-full mt-6 py-3 bg-brand text-white rounded-xl text-xs font-bold orange-glow">Executar Agora</button>
-                   </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'ranking' && (
-            <div className="space-y-8">
-              <header>
-                <h3 className="text-2xl font-bold">Ranking de Consultores</h3>
-                <p className="text-zinc-500 text-sm">Performance em tempo real da sua equipa.</p>
-              </header>
-
-              <div className="glass rounded-3xl border border-card-border overflow-hidden">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-zinc-900/50 text-[10px] uppercase tracking-widest text-zinc-500 border-b border-card-border">
-                      <th className="p-6">Posição</th>
-                      <th className="p-6">Consultor</th>
-                      <th className="p-6">Conversão</th>
-                      <th className="p-6">Tempo Resp.</th>
-                      <th className="p-6">Volume (€)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-card-border">
-                    {[
-                      { pos: 1, name: 'Carlos Mendes', conv: '18.2%', resp: '12min', vol: '€2.4M' },
-                      { pos: 2, name: 'Ana Silva', conv: '15.4%', resp: '5min', vol: '€1.8M' },
-                      { pos: 3, name: 'João Costa', conv: '12.1%', resp: '45min', vol: '€1.2M' },
-                      { pos: 4, name: 'Marta R.', conv: '9.8%', resp: '2h', vol: '€850k' }
-                    ].map((row) => (
-                      <tr key={row.pos} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="p-6 font-mono text-zinc-500">#{row.pos}</td>
-                        <td className="p-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold">
-                              {row.name[0]}
-                            </div>
-                            <span className="font-bold">{row.name}</span>
-                          </div>
-                        </td>
-                        <td className="p-6 text-sm font-medium">{row.conv}</td>
-                        <td className="p-6 text-sm text-zinc-400">{row.resp}</td>
-                        <td className="p-6 text-sm font-bold text-brand">{row.vol}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'forecast' && (
-            <div className="space-y-8">
-              <header>
-                <h3 className="text-2xl font-bold">Previsão de Fecho</h3>
-                <p className="text-zinc-500 text-sm">Projecção financeira baseada em IA e Scoring.</p>
-              </header>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 glass rounded-3xl p-8 border border-card-border">
-                   <h4 className="font-bold mb-8">Evolução do Pipeline (€)</h4>
-                   <div className="h-[350px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                         <AreaChart data={CHART_DATA}>
-                            <defs>
-                              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f1f23" />
-                            <XAxis dataKey="name" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                               contentStyle={{ backgroundColor: '#161618', border: '1px solid #26262A', borderRadius: '12px' }}
-                            />
-                            <Area type="monotone" dataKey="leads" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-                         </AreaChart>
-                      </ResponsiveContainer>
-                   </div>
-                </div>
-                <div className="glass rounded-3xl p-8 border border-card-border flex flex-col justify-between">
-                   <div>
-                      <h4 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-6">Próximos 30 Dias</h4>
-                      <p className="text-4xl font-bold mb-2">€42,800</p>
-                      <p className="text-xs text-green-500 font-bold mb-8">+15% vs mês anterior</p>
-                   </div>
-                   <div className="space-y-4">
-                      <div className="p-4 bg-zinc-900 rounded-2xl border border-card-border">
-                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1">Leads em Fecho</p>
-                         <p className="text-lg font-bold">14</p>
-                      </div>
-                      <div className="p-4 bg-zinc-900 rounded-2xl border border-card-border">
-                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1">Probabilidade Média</p>
-                         <p className="text-lg font-bold">68%</p>
-                      </div>
-                   </div>
-                   <button className="w-full mt-8 py-3 border border-card-border rounded-xl text-xs font-bold hover:bg-zinc-800 transition-all">Ver Relatório Completo</button>
-                </div>
-              </div>
+          {activeTab === 'leads' && (
+            <div className="space-y-8 animate-in fade-in duration-700">
+               <div className="glass rounded-[2rem] border border-white/5 overflow-hidden">
+                  <table className="w-full text-left">
+                     <thead>
+                        <tr className="bg-zinc-900/50 text-[10px] uppercase font-bold tracking-widest text-zinc-500 border-b border-white/5 font-mono">
+                           <th className="p-8">Lead / Origem</th>
+                           <th className="p-8">Status Operacional</th>
+                           <th className="p-8">Scoring AI</th>
+                           <th className="p-8">Valor Estimado</th>
+                           <th className="p-8">Ação</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-white/5">
+                        {leads.map(lead => (
+                           <tr key={lead.id} className="group hover:bg-white/[0.01] transition-all">
+                              <td className="p-8">
+                                 <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-600">
+                                       <Target size={18} />
+                                    </div>
+                                    <div>
+                                       <p className="text-sm font-bold text-zinc-200">{lead.name}</p>
+                                       <p className="text-[10px] text-zinc-600 font-mono">{lead.origin}</p>
+                                    </div>
+                                 </div>
+                              </td>
+                              <td className="p-8">
+                                 <span className="text-[9px] font-bold uppercase py-1 px-3 rounded-full border border-white/5 bg-white/5 text-zinc-400">
+                                    {lead.status}
+                                 </span>
+                              </td>
+                              <td className="p-8">
+                                 <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                                       <span>Probabilidade</span>
+                                       <span>{lead.probability}%</span>
+                                    </div>
+                                    <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
+                                       <div className="h-full bg-brand" style={{ width: `${lead.probability}%` }} />
+                                    </div>
+                                 </div>
+                              </td>
+                              <td className="p-8">
+                                 <span className="text-lg font-bold text-white">€{(lead.value/1000).toFixed(0)}k</span>
+                              </td>
+                              <td className="p-8">
+                                 <button 
+                                   onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
+                                   className="p-3 bg-white/5 border border-white/5 rounded-xl text-zinc-500 hover:text-brand hover:border-brand/20 transition-all"
+                                 >
+                                    <MessageSquare size={16} />
+                                 </button>
+                              </td>
+                           </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
             </div>
           )}
 
@@ -1461,66 +1386,45 @@ function SidebarContent({
         </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-8">
+      <nav className="flex-1 px-4 space-y-2 mt-8">
         <NavItem 
-          active={activeTab === 'dashboard'} 
-          onClick={() => handleTabChange('dashboard')}
+          active={activeTab === 'war-room'} 
+          onClick={() => handleTabChange('war-room')}
           icon={<LayoutDashboard size={18} />}
-          label="Overview"
-        />
-        {features.insights && (
-          <NavItem 
-            active={activeTab === 'insights'} 
-            onClick={() => handleTabChange('insights')}
-            icon={<TrendingUp size={20} />}
-            label="Insights"
-          />
-        )}
-        <NavItem 
-          active={activeTab === 'pipelines'} 
-          onClick={() => handleTabChange('pipelines')}
-          icon={<Briefcase size={20} />}
-          label="Pipelines"
+          label="War Room"
         />
         <NavItem 
-          active={activeTab === 'crm'} 
-          onClick={() => handleTabChange('crm')}
-          icon={<Users size={20} />}
-          label="CRM"
+          active={activeTab === 'imoveis'} 
+          onClick={() => handleTabChange('imoveis')}
+          icon={<Building2 size={18} />}
+          label="Imóveis"
         />
-        {features.ranking && (
-          <NavItem 
-            active={activeTab === 'ranking'} 
-            onClick={() => handleTabChange('ranking')}
-            icon={<Target size={20} />}
-            label="Ranking"
-          />
-        )}
+        <NavItem 
+          active={activeTab === 'negocios'} 
+          onClick={() => handleTabChange('negocios')}
+          icon={<Briefcase size={18} />}
+          label="Negócios"
+        />
+        <NavItem 
+          active={activeTab === 'credito'} 
+          onClick={() => handleTabChange('credito')}
+          icon={<CreditCard size={18} />}
+          label="Crédito Habitação"
+        />
+        <NavItem 
+          active={activeTab === 'leads'} 
+          onClick={() => handleTabChange('leads')}
+          icon={<Target size={18} />}
+          label="Leads & Pipeline"
+        />
 
-        <div className="pt-8 px-4 space-y-2">
-          {/* AI Tools Section Title Removed for minimalism */}
+        <div className="pt-8 space-y-2">
           <NavItem 
-            active={activeTab === 'copilot'}
-            onClick={() => handleTabChange('copilot')}
-            icon={<MessageSquare size={20} />}
-            label="Fox Engine Chat"
+            active={activeTab === 'settings'}
+            onClick={() => handleTabChange('settings')}
+            icon={<Settings size={18} />}
+            label="Configurações"
           />
-          {features.recrutamento && (
-             <NavItem 
-               active={activeTab === 'recruiter'}
-               onClick={() => handleTabChange('recruiter')}
-               icon={<Target size={20} />}
-               label="Recrutador"
-             />
-          )}
-          {features.previsao && (
-             <NavItem 
-               active={activeTab === 'forecast'}
-               onClick={() => handleTabChange('forecast')}
-               icon={<TrendingUp size={20} />}
-               label="Previsão"
-             />
-          )}
         </div>
       </nav>
 
@@ -1698,4 +1602,150 @@ function PipelineGroup({ title, leads, stages, onSelectLead }: { title: string, 
       </div>
     </div>
   );
+}
+
+// --- WAR ROOM COMPONENTS ---
+
+function MetricCard({ label, value, prefix = "", trend, icon }: { label: string, value: number, prefix?: string, trend?: string, icon: React.ReactNode }) {
+  return (
+    <div className="glass p-6 rounded-[2rem] border border-white/5 bg-dashboard-bg relative group overflow-hidden">
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+         {icon}
+      </div>
+      <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-2 font-mono">{label}</p>
+      <div className="flex items-baseline gap-2">
+         <h4 className="text-2xl font-bold tracking-tight">
+            <AnimatedCounter value={value} prefix={prefix} />
+         </h4>
+         {trend && <span className={cn("text-[9px] font-bold", trend.startsWith('+') ? "text-green-500" : "text-zinc-500")}>{trend}</span>}
+      </div>
+    </div>
+  );
+}
+
+function ModuleQuadrant({ title, icon, items, variant = 'light' }: { title: string, icon: React.ReactNode, items: any[], variant?: 'light' | 'dark' }) {
+  return (
+    <div className={cn(
+      "glass p-8 rounded-[2.5rem] border border-white/5 flex flex-col",
+      variant === 'dark' ? "bg-zinc-950/40" : "bg-dashboard-bg"
+    )}>
+      <div className="flex items-center gap-3 mb-8 px-1">
+         <div className="text-brand opacity-80">{icon}</div>
+         <h3 className="text-xs font-bold uppercase tracking-[0.2em] font-mono">{title}</h3>
+      </div>
+      
+      <div className="space-y-4 flex-1">
+        {items.map((item) => (
+          <div key={item.id} className="group cursor-pointer p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all">
+            <div className="flex items-center justify-between mb-1">
+               <span className="text-[11px] font-bold text-zinc-300 truncate mr-2">{item.title}</span>
+               <span className="text-[11px] font-bold text-white shrink-0">{item.value}</span>
+            </div>
+            <div className="flex items-center justify-between">
+               <span className="text-[9px] text-zinc-600 font-mono italic">{item.meta}</span>
+               <span className={cn(
+                 "text-[8px] font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded",
+                 item.status === 'disponível' || item.status === 'aprovado' ? "bg-green-500/10 text-green-500" :
+                 item.status === 'fechado' || item.status === 'vendido' ? "bg-brand/10 text-brand" :
+                 "bg-zinc-800 text-zinc-500"
+               )}>{item.status}</span>
+            </div>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-[10px] text-zinc-700 italic px-2">A aguardar dados...</p>}
+      </div>
+    </div>
+  );
+}
+
+function PropertyCard({ property }: { property: Property } & React.Attributes) {
+   return (
+      <div className="glass group rounded-[2.5rem] border border-white/5 overflow-hidden transition-all hover:border-white/10 hover:shadow-2xl">
+         <div className="h-48 bg-zinc-900 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80" />
+            <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+               <span className="text-[10px] font-bold text-white uppercase tracking-widest">{property.status}</span>
+            </div>
+            <div className="absolute bottom-4 left-6">
+               <p className="text-[10px] font-bold text-brand uppercase tracking-widest font-mono mb-1">{property.type}</p>
+               <h3 className="text-xl font-bold">{property.title}</h3>
+            </div>
+         </div>
+         <div className="p-8 space-y-6">
+            <div className="flex items-center justify-between">
+               <div className="flex items-center gap-2 text-zinc-400">
+                  <MapPin size={14} />
+                  <span className="text-xs">{property.location}</span>
+               </div>
+               <div className="flex items-center gap-2 text-zinc-500 text-xs font-mono">
+                  <span>{property.sqm}m²</span>
+                  {property.beds && <span> • {property.beds} quartos</span>}
+               </div>
+            </div>
+            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                <span className="text-2xl font-bold tracking-tight">€{property.price.toLocaleString()}</span>
+                <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-brand hover:text-white transition-all">
+                   <ChevronRight size={18} />
+                </button>
+            </div>
+         </div>
+      </div>
+   );
+}
+
+function BusinessCard({ business }: { business: BusinessTraspass } & React.Attributes) {
+   return (
+      <div className="glass-premium group rounded-[2.5rem] border border-white/5 p-10 space-y-8 relative overflow-hidden transition-all hover:-translate-y-1">
+         <div className="absolute -top-12 -right-12 w-32 h-32 bg-brand/5 blur-3xl rounded-full" />
+         <div className="flex items-center justify-between relative z-10">
+            <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-brand group-hover:bg-brand group-hover:text-white transition-all">
+               <Briefcase size={22} />
+            </div>
+            <span className={cn(
+              "text-[9px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded border",
+              business.status === 'disponível' ? "border-green-500/20 text-green-500" : "border-white/10 text-zinc-500"
+            )}>{business.status}</span>
+         </div>
+         <div className="space-y-2 relative z-10">
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">{business.category}</p>
+            <h3 className="text-2xl font-bold tracking-tight">{business.title}</h3>
+            <p className="text-xs text-zinc-500 italic">{business.location}</p>
+         </div>
+         <div className="grid grid-cols-2 gap-4 relative z-10">
+            <div className="bg-zinc-900/50 p-4 rounded-2xl border border-white/5">
+               <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Preço</p>
+               <p className="text-lg font-bold">€{(business.price / 1000).toFixed(0)}k</p>
+            </div>
+            <div className="bg-zinc-900/50 p-4 rounded-2xl border border-white/5">
+               <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Rev. Mensal</p>
+               <p className="text-lg font-bold">€{(business.revenue / 1000).toFixed(1)}k</p>
+            </div>
+         </div>
+      </div>
+   );
+}
+
+function MortgageRow({ mortgage }: { mortgage: MortgageProcess } & React.Attributes) {
+   return (
+      <div className="glass p-6 rounded-3xl border border-white/5 flex items-center gap-6 group hover:bg-white/[0.02] transition-all">
+         <div className="w-14 h-14 rounded-2xl bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:text-brand transition-colors shrink-0">
+            <CreditCard size={24} />
+         </div>
+         <div className="flex-1">
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 font-mono">{mortgage.bank}</p>
+            <h4 className="text-lg font-bold tracking-tight">{mortgage.clientName}</h4>
+            <div className="flex items-center gap-4 mt-2">
+               <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-green-500" />
+                  <span className="text-[10px] text-zinc-500">{mortgage.status}</span>
+               </div>
+               <span className="text-[10px] text-zinc-600 italic">Previsão: {mortgage.probability}%</span>
+            </div>
+         </div>
+         <div className="text-right">
+            <p className="text-xl font-bold">€{(mortgage.amount / 1000).toFixed(0)}k</p>
+            <button className="text-[10px] font-bold text-brand uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Ver Detalhes</button>
+         </div>
+      </div>
+   );
 }
