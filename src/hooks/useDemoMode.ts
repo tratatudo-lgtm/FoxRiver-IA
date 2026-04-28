@@ -8,11 +8,11 @@ const INTERESTS_RECRUITER = ["Consultor Imobiliário", "Team Leader", "Angariado
 
 const ORIGINS: LeadOrigin[] = ['Instagram', 'Facebook', 'WhatsApp'];
 
-export function useDemoMode(active: boolean, onNewLead: (lead: Lead) => void) {
+export function useDemoMode(active: boolean, onNewLead: (lead: Lead) => void, onEvent?: (event: { id: string, text: string, type: 'info' | 'success' | 'alert' }) => void) {
   useEffect(() => {
     if (!active) return;
 
-    const interval = setInterval(() => {
+    const generateLead = () => {
       const types: LeadType[] = ['comprador', 'vendedor', 'angariador', 'recruta'];
       const type = types[Math.floor(Math.random() * types.length)];
       const name = NAMES[Math.floor(Math.random() * NAMES.length)];
@@ -30,7 +30,7 @@ export function useDemoMode(active: boolean, onNewLead: (lead: Lead) => void) {
         interest = INTERESTS_RECRUITER[Math.floor(Math.random() * INTERESTS_RECRUITER.length)];
       }
 
-      const score = Math.floor(Math.random() * 100);
+      const score = Math.floor(Math.random() * 30) + (value > 500000 ? 60 : 40);
       let scoreLabel: any = '❄️ fria';
       if (score > 75) scoreLabel = '🔥 quente';
       else if (score > 40) scoreLabel = '⚠️ morna';
@@ -46,13 +46,41 @@ export function useDemoMode(active: boolean, onNewLead: (lead: Lead) => void) {
         createdAt: new Date().toISOString(),
         score,
         scoreLabel,
-        probability: Math.floor(Math.random() * 100),
+        probability: Math.floor(Math.random() * 30) + 30, // 30-60% initially
         value: value > 0 ? value : undefined
       };
 
       onNewLead(newLead);
-    }, 8000); 
+      
+      if (onEvent) {
+        onEvent({
+          id: Math.random().toString(16).slice(2),
+          text: `Nova Lead captada via ${origin}: ${name}`,
+          type: 'info'
+        });
+        
+        setTimeout(() => {
+          onEvent({
+            id: Math.random().toString(16).slice(2),
+            text: `IA analisou perfil: Score ${score} (${scoreLabel})`,
+            type: score > 75 ? 'success' : 'info'
+          });
+        }, 2000);
+      }
+    };
 
-    return () => clearInterval(interval);
-  }, [active, onNewLead]);
+    // Initial burst to show activity fast
+    const t0 = setTimeout(generateLead, 500);
+    const t1 = setTimeout(generateLead, 4000);
+    const t2 = setTimeout(generateLead, 7000);
+
+    const interval = setInterval(generateLead, 15000); 
+
+    return () => {
+      clearTimeout(t0);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearInterval(interval);
+    };
+  }, [active, onNewLead, onEvent]);
 }

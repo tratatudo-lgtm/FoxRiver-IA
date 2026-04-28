@@ -251,7 +251,13 @@ export default function App() {
     }
   }, [isDemoActive, settings.autoPilot]);
 
-  useDemoMode(isDemoActive, handleNewLead);
+  const [demoEvents, setDemoEvents] = useState<{ id: string, text: string, type: 'info' | 'success' | 'alert', time: Date }[]>([]);
+
+  const addDemoEvent = useCallback((event: any) => {
+    setDemoEvents(prev => [{ ...event, time: new Date() }, ...prev].slice(0, 5));
+  }, []);
+
+  useDemoMode(isDemoActive, handleNewLead, addDemoEvent);
 
   // Pipeline Evolution Simulation
   useEffect(() => {
@@ -578,48 +584,100 @@ export default function App() {
                     </div>
                   </div>
                   
-                  <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
-                    <AnimatePresence mode="popLayout">
-                      {leads.map((lead) => (
-                        <motion.div 
-                          key={lead.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          layout
-                          onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
-                          className="group cursor-pointer p-5 rounded-2xl bg-white/5 hover:bg-white/[0.08] border border-transparent hover:border-white/5 transition-all"
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                             <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-brand" />
-                                <span className="text-sm font-bold text-zinc-100">{lead.name}</span>
-                             </div>
-                             <OriginIcon origin={lead.origin} />
-                          </div>
-                          <p className="text-xs text-zinc-500 line-clamp-1 mb-4 italic">"{lead.interest}"</p>
-                          <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                             <div className="flex items-center gap-2">
-                                <span className={cn(
-                                   "text-[9px] font-bold px-2 py-0.5 rounded-full uppercase",
-                                   lead.score! > 75 ? "text-red-500" : "text-zinc-500"
-                                )}>
-                                  {lead.scoreLabel}
-                                </span>
-                             </div>
-                             <span className="text-[10px] font-mono text-zinc-600">
-                                {new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                             </span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
+                    <div className="flex-1 space-y-4 overflow-y-auto pr-1 flex flex-col">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest font-mono">AI Intelligence Log</p>
+                        <div className="space-y-2">
+                          <AnimatePresence mode="popLayout">
+                            {demoEvents.map((event) => (
+                              <motion.div
+                                key={event.id}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                className={cn(
+                                  "p-3 rounded-xl border text-[10px] font-medium leading-relaxed",
+                                  event.type === 'success' ? "bg-green-500/5 border-green-500/10 text-green-500" :
+                                  event.type === 'alert' ? "bg-red-500/5 border-red-500/10 text-red-500" :
+                                  "bg-zinc-900 border-white/5 text-zinc-400"
+                                )}
+                              >
+                                <span className="text-zinc-600 mr-2">[{event.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
+                                {event.text}
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                          {demoEvents.length === 0 && <p className="text-[10px] text-zinc-700 italic px-2">A aguardar actividade...</p>}
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-white/5 space-y-4">
+                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest font-mono">Live Contacts</p>
+                        <div className="space-y-4">
+                          <AnimatePresence mode="popLayout">
+                            {leads.slice(0, 5).map((lead) => (
+                              <motion.div 
+                                key={lead.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                layout
+                                onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
+                                className="group cursor-pointer p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                   <div className="flex items-center gap-2">
+                                      <div className={cn(
+                                        "w-1.5 h-1.5 rounded-full",
+                                        lead.score! > 75 ? "bg-red-500" : "bg-brand"
+                                      )} />
+                                      <span className="text-xs font-bold text-zinc-300">{lead.name}</span>
+                                   </div>
+                                   <OriginIcon origin={lead.origin} />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                   <span className="text-[9px] font-mono text-zinc-600">{new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                   <span className="text-[9px] font-bold text-brand uppercase tracking-tighter">€{(lead.value || 0 / 1000).toFixed(0)}k</span>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </div>
                   
                   <div className="mt-8 pt-6 border-t border-white/5">
                      <p className="text-[10px] text-zinc-600 uppercase tracking-widest text-center font-mono">A processar eventos em tempo real...</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Premium Activation Banner */}
+              <div className="flex flex-col items-center justify-center py-20 space-y-8 glass-premium rounded-[3rem] border border-brand/20 relative overflow-hidden">
+                 <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(232,81,26,0.1)_0%,transparent_70%)]" />
+                 <div className="text-center space-y-4 relative z-10">
+                   <h2 className="text-3xl lg:text-5xl font-bold tracking-tight">Pronto para Dominar o Mercado?</h2>
+                   <p className="text-zinc-500 max-w-xl mx-auto">
+                     A Fox River AI já captou e qualificou leads que valem mais de <span className="text-white font-bold">€150.000</span> nesta demonstração. 
+                     Não deixe o capital escapar pelos dedos.
+                   </p>
+                 </div>
+                 <div className="flex flex-col sm:flex-row gap-6 relative z-10 w-full max-w-md px-6">
+                    <button 
+                      onClick={() => alert("Parabéns! A sua conta Fox River Premium está agora a ser provisionada. Prepare-se para o próximo nível.")}
+                      className="flex-1 py-5 bg-brand text-white rounded-2xl text-base font-bold shadow-[0_0_50px_rgba(232,81,26,0.2)] hover:scale-105 transition-all"
+                    >
+                      ATIVAR AGÊNCIA FULL (PRO)
+                    </button>
+                    <button className="flex-1 py-5 bg-zinc-900 border border-white/5 text-zinc-400 rounded-2xl text-sm font-bold hover:bg-zinc-800 transition-all">
+                      Falar com Consultor
+                    </button>
+                 </div>
+                 <div className="flex items-center gap-6 pt-4 relative z-10 opacity-50 grayscale hover:grayscale-0 transition-all">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Remax_logo.svg" className="h-6" alt="Remax" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Century_21_logo.svg" className="h-4" alt="C21" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/Zillow_logo.svg" className="h-5" alt="Zillow" />
+                 </div>
               </div>
             </div>
           )}
