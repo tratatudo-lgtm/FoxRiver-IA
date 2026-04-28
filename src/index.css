@@ -3,25 +3,33 @@
 @theme {
   --color-brand: #E8511A;
   --color-brand-hover: #D44415;
-  --color-dashboard-bg: #0A0A0B;
-  --color-card-bg: #161618;
-  --color-card-border: #26262A;
+  --color-dashboard-bg: #030303;
+  --color-card-bg: #09090b;
+  --color-card-border: #18181b;
+  --font-sans: "Inter", "Geist", system-ui, sans-serif;
 }
 
 @layer base {
   body {
-    @apply bg-dashboard-bg text-white font-sans;
+    @apply bg-dashboard-bg text-white font-sans antialiased selection:bg-brand/30;
   }
 }
 
 .glass {
-  background: rgba(22, 22, 24, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(9, 9, 11, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.glass-premium {
+  background: radial-gradient(circle at top left, rgba(232, 81, 26, 0.05), transparent 40%), 
+              rgba(9, 9, 11, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .orange-glow {
-  box-shadow: 0 0 20px rgba(232, 81, 26, 0.15);
+  box-shadow: 0 0 40px rgba(232, 81, 26, 0.1);
 }
 
 @keyframes pulse-orange {
