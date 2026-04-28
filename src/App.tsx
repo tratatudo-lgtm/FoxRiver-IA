@@ -460,195 +460,132 @@ export default function App() {
 
         <div className="p-4 lg:p-10 max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
-            <div className="space-y-8 lg:space-y-12">
-              {/* Premium Hero Section */}
-              <div className="relative overflow-hidden glass-premium rounded-[2.5rem] p-8 lg:p-12 border border-white/5">
-                <div className="absolute top-0 right-0 p-8">
-                   <Target size={120} className="text-brand/5 rotate-12" />
+            <div className="space-y-16 lg:space-y-24 pt-10">
+              {/* Ultra Minimal Hero */}
+              <div className="text-center space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5 backdrop-blur-md">
+                   <div className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] font-mono">Live Forecast Portfolio</span>
                 </div>
                 
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                  <div className="space-y-6">
-                    <div>
-                       <span className="text-brand text-[10px] font-bold uppercase tracking-[0.3em] mb-2 block">Previsão de Faturação</span>
-                       <h1 className="text-5xl lg:text-7xl font-bold tracking-tight">
-                         <AnimatedCounter 
-                            value={leads.reduce((acc, l) => acc + (l.value || 0) * ((l.probability || 0) / 100), 0)} 
-                            prefix="€" 
-                         />
-                       </h1>
-                       <p className="text-zinc-500 text-sm lg:text-base mt-4 max-w-md leading-relaxed">
-                         Baseado em <span className="text-white font-semibold">{leads.length} leads</span> ativas e respetivas probabilidades de fecho geradas por IA.
-                       </p>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-4 pt-4">
-                       <button className="bg-brand text-white px-8 py-4 rounded-2xl text-sm font-bold orange-glow hover:bg-brand-hover transition-all flex items-center gap-3">
-                         Ver Estratégia AI <ChevronRight size={18} />
-                       </button>
-                       {features.autopilot && (
-                          <div className={cn(
-                            "px-6 py-4 rounded-2xl border flex items-center gap-3 text-xs font-bold transition-all",
-                            settings.autoPilot ? "bg-green-500/10 border-green-500/20 text-green-500" : "bg-zinc-900 border-white/5 text-zinc-500"
-                          )}>
-                            <div className={cn("w-2 h-2 rounded-full", settings.autoPilot ? "bg-green-500 animate-pulse" : "bg-zinc-700")} />
-                            {settings.autoPilot ? "PILOTO AUTOMÁTICO ATIVO" : "PILOTO PAUSADO"}
-                          </div>
-                       )}
-                    </div>
-                  </div>
+                <h1 className="text-7xl lg:text-[10rem] font-bold tracking-tighter text-gradient leading-none">
+                  <AnimatedCounter 
+                    value={leads.reduce((acc, l) => acc + (l.value || 0) * ((l.probability || 0) / 100), 0)} 
+                    prefix="€" 
+                  />
+                </h1>
+                
+                <div className="flex flex-col items-center gap-6">
+                  <p className="text-zinc-500 text-sm lg:text-lg max-w-2xl mx-auto leading-relaxed font-light">
+                    Análise em tempo real de ativos sob gestão Fox River Engine. <br/>
+                    <span className="text-white font-medium">98.2% de precisão</span> nas projeções de fecho para o trimestre corrente.
+                  </p>
                   
-                  <div className="grid grid-cols-2 gap-4 lg:gap-6">
-                     <div className="glass p-6 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
-                        <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mb-2 font-mono">Conversão AI</p>
-                        <h3 className="text-3xl font-bold">12.4%</h3>
-                        <p className="text-green-500 text-[10px] font-bold mt-1">+2.1% vs set</p>
-                     </div>
-                     <div className="glass p-6 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
-                        <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mb-2 font-mono">Eficiência</p>
-                        <h3 className="text-3xl font-bold">98.2%</h3>
-                        <p className="text-brand text-[10px] font-bold mt-1">Alta Performance</p>
-                     </div>
-                     {features.insights && (
-                        <div className="col-span-2 glass-premium p-6 rounded-3xl border border-red-500/10 bg-red-500/5 flex items-center justify-between">
-                           <div>
-                              <p className="text-red-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Leakage Awareness</p>
-                              <h4 className="text-xl font-bold">€15.2k Perdidos</h4>
-                              <p className="text-zinc-500 text-[10px] mt-1">Leads sem resposta &gt; 24h. Acção imediata necessária.</p>
-                           </div>
-                           <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
-                              <Clock size={20} />
-                           </div>
-                        </div>
-                     )}
+                  <div className="flex items-center gap-8 pt-6">
+                    <div className="text-center">
+                       <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 font-mono">Volume</p>
+                       <p className="text-xl font-bold">{leads.length}</p>
+                    </div>
+                    <div className="w-px h-10 bg-white/5" />
+                    <div className="text-center">
+                       <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 font-mono">Conversão</p>
+                       <p className="text-xl font-bold text-green-500">12.4%</p>
+                    </div>
+                    <div className="w-px h-10 bg-white/5" />
+                    <div className="text-center">
+                       <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 font-mono">AI Efficiency</p>
+                       <p className="text-xl font-bold text-brand">99.1%</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Real-time Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-                <div className="lg:col-span-8 space-y-8">
-                  <div className="glass rounded-[2rem] p-8 border border-white/5">
-                    <div className="flex items-center justify-between mb-10">
-                      <div>
-                        <h3 className="text-xl font-bold tracking-tight">Volume de Operações</h3>
-                        <p className="text-xs text-zinc-500 mt-1">Interações automáticas e manuais nos últimos 7 dias.</p>
-                      </div>
-                      <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-white/5">
-                         <button className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white shadow-lg">Semana</button>
-                         <button className="px-4 py-1.5 rounded-lg text-xs font-semibold text-zinc-500 hover:text-white transition-colors">Mês</button>
-                      </div>
+              {/* Minimal Horizontal Flow */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-0 relative">
+                 <div className="hidden lg:block absolute top-1/2 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-brand/20 to-transparent -translate-y-1/2" />
+                 
+                 <div className="glass p-10 rounded-[2.5rem] border border-white/5 text-center relative z-10 bg-dashboard-bg">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 font-mono">01. Capture</p>
+                    <div className="w-14 h-14 rounded-full bg-brand/5 border border-brand/20 flex items-center justify-center mx-auto mb-8 text-brand">
+                       <Target size={28} />
                     </div>
-                    
-                    <div className="h-[350px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={CHART_DATA}>
-                          <defs>
-                            <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#E8511A" stopOpacity={0.2}/>
-                              <stop offset="95%" stopColor="#E8511A" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <XAxis 
-                            dataKey="name" 
-                            stroke="#3f3f46" 
-                            fontSize={12} 
-                            tickLine={false} 
-                            axisLine={false} 
-                          />
-                          <YAxis hide />
-                          <Tooltip 
-                             contentStyle={{ backgroundColor: '#09090b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px' }}
-                             itemStyle={{ color: '#fff', fontSize: '12px' }}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="leads" 
-                            stroke="#E8511A" 
-                            strokeWidth={3} 
-                            fillOpacity={1} 
-                            fill="url(#colorLeads)" 
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                    <h3 className="text-xl font-bold mb-3 tracking-tight">Lead Omnicanal</h3>
+                    <p className="text-xs text-zinc-500 font-light leading-relaxed">Captação instantânea via Instagram, WhatsApp e Facebook.</p>
+                 </div>
+
+                 <div className="glass-premium p-10 rounded-[2.5rem] border border-white/10 text-center relative z-10 bg-dashboard-bg lg:-mx-6 lg:scale-110 shadow-2xl">
+                    <p className="text-[10px] font-bold text-brand uppercase tracking-widest mb-6 font-mono">02. Intelligence</p>
+                    <div className="w-14 h-14 rounded-full bg-brand flex items-center justify-center mx-auto mb-8 text-white orange-glow">
+                       <MessageSquare size={28} />
                     </div>
-                  </div>
+                    <h3 className="text-2xl font-bold mb-3 tracking-tight text-gradient">Fox River Engine</h3>
+                    <p className="text-sm text-zinc-300 font-light px-4 leading-relaxed">Qualificação autónoma, scoring preditivo e gestão de CRM 24/7 sem intervenção humana.</p>
+                 </div>
+
+                 <div className="glass p-10 rounded-[2.5rem] border border-white/5 text-center relative z-10 bg-dashboard-bg">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 font-mono">03. Closing</p>
+                    <div className="w-14 h-14 rounded-full bg-green-500/5 border border-green-500/20 flex items-center justify-center mx-auto mb-8 text-green-500">
+                       <TrendingUp size={28} />
+                    </div>
+                    <h3 className="text-xl font-bold mb-3 tracking-tight">Monetização</h3>
+                    <p className="text-xs text-zinc-500 font-light leading-relaxed">Conversão de leads em contratos angariados e fechos validados.</p>
+                 </div>
+              </div>
+
+              {/* Advanced Terminal Feed & Premium Banner */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 pt-10 pb-20">
+                <div className="lg:col-span-8">
+                   <div className="flex items-center justify-between mb-10 px-2">
+                      <div className="flex items-center gap-3">
+                         <div className="w-2 h-2 rounded-full bg-brand animate-pulse-soft" />
+                         <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 font-mono">System Live Stream</h3>
+                      </div>
+                      <div className="text-[10px] text-zinc-700 font-mono">SECURE_SYNC_ENGAGED // AES_256</div>
+                   </div>
+                   
+                   <div className="space-y-5 font-mono overflow-hidden">
+                      <AnimatePresence mode="popLayout">
+                        {demoEvents.map((event, idx) => (
+                          <motion.div
+                            key={event.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="flex items-start gap-4 text-[11px] group"
+                          >
+                             <span className="text-zinc-800 shrink-0">[{event.time.toLocaleTimeString([], { hour12: false })}]</span>
+                             <div className={cn(
+                               "px-3 py-1 rounded border terminal-line transition-all group-hover:border-white/10",
+                               event.type === 'success' ? "border-green-500/10 bg-green-500/5 text-green-400" :
+                               event.type === 'alert' ? "border-red-500/10 bg-red-500/5 text-red-400" :
+                               "border-white/5 bg-white/5 text-zinc-400"
+                             )}>
+                                <span className="opacity-30 mr-3">#</span>
+                                {event.text}
+                             </div>
+                             <span className="text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity ml-auto tracking-tighter">PID_{100 + idx}</span>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                   </div>
                 </div>
 
-                <div className="lg:col-span-4 glass rounded-[2rem] p-8 border border-white/5 h-full min-h-[500px] flex flex-col">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-bold tracking-tight">Live Event Feed</h3>
-                    <div className="flex items-center gap-2">
-                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                       <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Online</span>
-                    </div>
-                  </div>
-                  
-                    <div className="flex-1 space-y-4 overflow-y-auto pr-1 flex flex-col">
-                      <div className="space-y-2">
-                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest font-mono">AI Intelligence Log</p>
-                        <div className="space-y-2">
-                          <AnimatePresence mode="popLayout">
-                            {demoEvents.map((event) => (
-                              <motion.div
-                                key={event.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 10 }}
-                                className={cn(
-                                  "p-3 rounded-xl border text-[10px] font-medium leading-relaxed",
-                                  event.type === 'success' ? "bg-green-500/5 border-green-500/10 text-green-500" :
-                                  event.type === 'alert' ? "bg-red-500/5 border-red-500/10 text-red-500" :
-                                  "bg-zinc-900 border-white/5 text-zinc-400"
-                                )}
-                              >
-                                <span className="text-zinc-600 mr-2">[{event.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
-                                {event.text}
-                              </motion.div>
-                            ))}
-                          </AnimatePresence>
-                          {demoEvents.length === 0 && <p className="text-[10px] text-zinc-700 italic px-2">A aguardar actividade...</p>}
-                        </div>
-                      </div>
-                      
-                      <div className="pt-4 border-t border-white/5 space-y-4">
-                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest font-mono">Live Contacts</p>
-                        <div className="space-y-4">
-                          <AnimatePresence mode="popLayout">
-                            {leads.slice(0, 5).map((lead) => (
-                              <motion.div 
-                                key={lead.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                layout
-                                onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
-                                className="group cursor-pointer p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                   <div className="flex items-center gap-2">
-                                      <div className={cn(
-                                        "w-1.5 h-1.5 rounded-full",
-                                        lead.score! > 75 ? "bg-red-500" : "bg-brand"
-                                      )} />
-                                      <span className="text-xs font-bold text-zinc-300">{lead.name}</span>
-                                   </div>
-                                   <OriginIcon origin={lead.origin} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                   <span className="text-[9px] font-mono text-zinc-600">{new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                   <span className="text-[9px] font-bold text-brand uppercase tracking-tighter">€{(lead.value || 0 / 1000).toFixed(0)}k</span>
-                                </div>
-                              </motion.div>
-                            ))}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </div>
-                  
-                  <div className="mt-8 pt-6 border-t border-white/5">
-                     <p className="text-[10px] text-zinc-600 uppercase tracking-widest text-center font-mono">A processar eventos em tempo real...</p>
-                  </div>
+                <div className="lg:col-span-4 glass-premium p-12 rounded-[3.5rem] border border-white/5 flex flex-col justify-between overflow-hidden relative group min-h-[400px]">
+                   <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand/10 blur-[120px] rounded-full group-hover:bg-brand/20 transition-all duration-1000 animate-pulse-soft" />
+                   
+                   <div className="relative z-10">
+                      <p className="text-brand text-[10px] font-bold uppercase tracking-[0.3em] mb-6 font-mono">Market Alert</p>
+                      <h4 className="text-4xl font-bold tracking-tight mb-6 leading-tight">€15.2k em Capital em Risco</h4>
+                      <p className="text-zinc-500 text-sm leading-relaxed font-light">
+                        Detectamos <span className="text-white font-medium">8 leads subsequentes</span> com tempo de resposta superior a 24h. 
+                        Recomendamos ativação imediata do piloto automático para mitigar desvalorização do portfolio.
+                      </p>
+                   </div>
+                   
+                   <div className="relative z-10 pt-10">
+                      <button className="w-full py-6 bg-white text-black rounded-2xl text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-zinc-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        Ativar Autopilot Fox River
+                      </button>
+                   </div>
                 </div>
               </div>
 
@@ -1560,13 +1497,13 @@ function SidebarContent({
           />
         )}
 
-        <div className="pt-6 lg:pt-8 px-4">
-          <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold mb-4">Ferramentas AI</p>
+        <div className="pt-8 px-4 space-y-2">
+          {/* AI Tools Section Title Removed for minimalism */}
           <NavItem 
             active={activeTab === 'copilot'}
             onClick={() => handleTabChange('copilot')}
             icon={<MessageSquare size={20} />}
-            label="Copiloto"
+            label="Fox Engine Chat"
           />
           {features.recrutamento && (
              <NavItem 
@@ -1634,20 +1571,29 @@ function NavItem({ active, onClick, icon, label }: { active?: boolean, onClick?:
     <button 
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 w-full px-4 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl text-sm font-medium transition-all duration-300",
+        "flex items-center gap-4 w-full px-5 py-3 rounded-2xl text-[13px] transition-all duration-500 group relative",
         active 
-          ? "bg-zinc-800 text-white shadow-lg border border-card-border" 
-          : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50"
+          ? "bg-white/[0.03] text-white border border-white/5 shadow-2xl" 
+          : "text-zinc-500 hover:text-zinc-200"
       )}
     >
+      {active && (
+        <motion.div 
+          layoutId="nav-glow"
+          className="absolute -left-2 w-1 h-4 bg-brand rounded-full orange-glow"
+        />
+      )}
       <div className={cn(
-        "transition-colors",
-        active ? "text-brand" : "text-zinc-500"
+        "transition-all duration-500",
+        active ? "text-brand scale-110" : "text-zinc-600 group-hover:text-zinc-400 group-hover:scale-105"
       )}>
-        {icon}
+        {React.cloneElement(icon as React.ReactElement, { size: 18 })}
       </div>
-      {label}
-      {active && <ChevronRight className="ml-auto text-zinc-600" size={14} />}
+      <span className={cn(
+        "tracking-tight",
+        active ? "font-bold" : "font-medium"
+      )}>{label}</span>
+      {active && <ChevronRight className="ml-auto text-brand/50" size={14} />}
     </button>
   );
 }
