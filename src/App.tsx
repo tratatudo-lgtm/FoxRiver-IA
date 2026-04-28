@@ -13,7 +13,8 @@ import {
   Users, 
   Target, 
   Briefcase, 
-  TrendingUp, 
+  TrendingUp,
+  TrendingDown,
   MessageSquare, 
   LayoutDashboard, 
   Settings, 
@@ -41,7 +42,10 @@ import {
   Cpu,
   BarChart3,
   CreditCard,
-  PieChart
+  PieChart,
+  Globe,
+  Layers,
+  ArrowUpRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -59,7 +63,7 @@ import {
 } from 'recharts';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Lead, LeadType, LeadStatus, ChatMessage, Property, BusinessTraspass, MortgageProcess, STATUS_MAP } from './types';
+import { Lead, LeadType, LeadStatus, ChatMessage, Property, BusinessTraspass, MortgageProcess, STATUS_MAP, InvestmentInsight, HotDeal } from './types';
 import { useDemoMode } from './hooks/useDemoMode';
 import { getAIReply } from './lib/gemini';
 
@@ -176,8 +180,44 @@ const REGIONAL_HEATMAP = [
   { name: 'Monção', value: 55, status: 'GROWTH' },
 ];
 
+const INVESTMENT_INSIGHTS: InvestmentInsight[] = [
+  { location: 'Viana do Castelo', score: 92, yield: 6.8, demand: 'High', forecast: 14.2 },
+  { location: 'Caminha', score: 88, yield: 5.4, demand: 'High', forecast: 18.5 },
+  { location: 'Braga Centro', score: 85, yield: 4.2, demand: 'High', forecast: 9.1 },
+  { location: 'Valença', score: 76, yield: 8.1, demand: 'Medium', forecast: 12.0 },
+  { location: 'Pontes de Lima', score: 79, yield: 5.9, demand: 'Medium', forecast: 10.5 },
+  { location: 'Monção', score: 72, yield: 7.4, demand: 'Low', forecast: 8.2 },
+];
+
+const HOT_DEALS: HotDeal[] = [
+  {
+    id: 'hd1',
+    title: 'Edifício Industrial Revitalizado',
+    location: 'Viana (Zona Portuária)',
+    price: 850000,
+    status: 'oportunidade',
+    type: 'Comercial',
+    sqm: 1200,
+    discount: 15,
+    estRoi: 12.4,
+    investorScore: 94
+  },
+  {
+    id: 'hd2',
+    title: 'Lote Urbano c/ Projecto Aprovado',
+    location: 'Caminha (Foz)',
+    price: 245000,
+    status: 'oportunidade',
+    type: 'Terreno',
+    sqm: 600,
+    discount: 12,
+    estRoi: 22.0,
+    investorScore: 89
+  }
+];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'war-room' | 'imoveis' | 'negocios' | 'credito' | 'leads' | 'settings'>('war-room');
+  const [activeTab, setActiveTab] = useState<'war-room' | 'imoveis' | 'negocios' | 'credito' | 'leads' | 'settings' | 'investor'>('war-room');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [properties, setProperties] = useState<Property[]>(INITIAL_PROPERTIES);
   const [businesses, setBusinesses] = useState<BusinessTraspass[]>(INITIAL_BUSINESSES);
@@ -457,6 +497,7 @@ export default function App() {
                activeTab === 'imoveis' ? 'Portfolio Imobiliário' :
                activeTab === 'negocios' ? 'Oportunidades' :
                activeTab === 'credito' ? 'Gestão de Crédito' :
+               activeTab === 'investor' ? 'Investor Mode AI' : 
                activeTab === 'leads' ? 'Pipeline & Leads' : activeTab}
             </h2>
             {isDemoActive && (
@@ -751,67 +792,214 @@ export default function App() {
             </div>
           )}
 
-          {activeTab === 'leads' && (
-            <div className="space-y-8 animate-in fade-in duration-700">
-               <div className="glass rounded-[2rem] border border-white/5 overflow-hidden">
-                  <table className="w-full text-left">
-                     <thead>
-                        <tr className="bg-zinc-900/50 text-[10px] uppercase font-bold tracking-widest text-zinc-500 border-b border-white/5 font-mono">
-                           <th className="p-8">Lead / Origem</th>
-                           <th className="p-8">Status Operacional</th>
-                           <th className="p-8">Scoring AI</th>
-                           <th className="p-8">Valor Estimado</th>
-                           <th className="p-8">Ação</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-white/5">
-                        {leads.map(lead => (
-                           <tr key={lead.id} className="group hover:bg-white/[0.01] transition-all">
-                              <td className="p-8">
-                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-600">
-                                       <Target size={18} />
+          {activeTab === 'investor' && (
+            <div className="space-y-12 animate-in fade-in duration-700">
+               {/* INVESTMENT HEADER STATS */}
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40 relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 p-4 text-brand opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Zap size={40} />
+                     </div>
+                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 font-mono">Investment Score Médio</p>
+                     <div className="flex items-baseline gap-2">
+                        <h4 className="text-4xl font-bold">84.2</h4>
+                        <span className="text-xs text-green-500 font-bold font-mono">ULTRA_BULLISH</span>
+                     </div>
+                  </div>
+                  <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40">
+                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 font-mono">Volume Sob Análise</p>
+                     <h4 className="text-4xl font-bold">€12.4M</h4>
+                  </div>
+                  <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40">
+                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 font-mono">Yield Média Portfolio</p>
+                     <h4 className="text-4xl font-bold">6.2%</h4>
+                  </div>
+                  <div className="glass p-8 rounded-[2.5rem] border border-brand/20 bg-brand/5">
+                     <p className="text-[10px] font-bold text-brand uppercase tracking-widest mb-2 font-mono">IA Forecast (24m)</p>
+                     <h4 className="text-4xl font-bold text-white">+18.5%</h4>
+                  </div>
+               </div>
+
+               {/* GIS MAP SECTION */}
+               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8">
+                     <div className="glass-premium rounded-[3rem] border border-white/5 bg-dashboard-bg overflow-hidden relative h-[650px]">
+                        <div className="absolute top-8 left-8 z-20 space-y-4">
+                           <div className="bg-black/60 backdrop-blur-md p-6 rounded-3xl border border-white/10 space-y-4 w-64">
+                              <div className="flex items-center justify-between">
+                                 <h4 className="text-xs font-bold uppercase tracking-widest font-mono text-zinc-400">Map Filters</h4>
+                                 <Layers size={14} className="text-brand" />
+                              </div>
+                              <div className="space-y-2">
+                                 {['Heatmap: Rentabilidade', 'Zonamento Urbano', 'Projetos Futuros'].map(filter => (
+                                    <div key={filter} className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                                       <span className="text-[9px] font-bold uppercase tracking-tighter">{filter}</span>
+                                       <div className="w-2 h-2 rounded-full bg-brand" />
                                     </div>
-                                    <div>
-                                       <p className="text-sm font-bold text-zinc-200">{lead.name}</p>
-                                       <p className="text-[10px] text-zinc-600 font-mono">{lead.origin}</p>
+                                 ))}
+                              </div>
+                           </div>
+                           
+                           <div className="bg-black/60 backdrop-blur-md p-6 rounded-3xl border border-white/10 w-64">
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest font-mono text-zinc-500 mb-4">Real-time Pulse</h4>
+                              <div className="space-y-3">
+                                 <div className="flex items-center gap-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                    <span className="text-[9px] font-bold text-zinc-300">Norte Litoral: High Demand</span>
+                                 </div>
+                                 <div className="flex items-center gap-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    <span className="text-[9px] font-bold text-zinc-300">Minho Central: Value Growth</span>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* MOCK 3D MAP VISUALIZATION */}
+                        <div className="absolute inset-0 bg-[#070708] flex items-center justify-center">
+                           <div className="relative w-full h-full opacity-40">
+                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(232,81,26,0.1)_0%,transparent_70%)]" />
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                 <div className="w-[800px] h-[600px] relative border border-white/[0.02] rotate-x-12 -rotate-z-12 transform-gpu perspective-1000">
+                                    {/* GRID LINES */}
+                                    <div className="absolute inset-0 grid grid-cols-10 grid-rows-10 opacity-20">
+                                       {Array.from({ length: 121 }).map((_, i) => (
+                                          <div key={i} className="border-[0.5px] border-zinc-900" />
+                                       ))}
+                                    </div>
+                                    {/* HEATMAP BLOBS */}
+                                    <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-brand/30 blur-[60px] rounded-full animate-pulse-soft" />
+                                    <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-brand/20 blur-[80px] rounded-full" />
+                                    
+                                    {/* DATA PINS */}
+                                    {INVESTMENT_INSIGHTS.map((insight, idx) => (
+                                       <motion.div
+                                          key={insight.location}
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{ height: insight.score * 1.5, opacity: 1 }}
+                                          transition={{ delay: idx * 0.1, duration: 1 }}
+                                          className="absolute w-1 bg-gradient-to-t from-brand to-transparent group cursor-pointer"
+                                          style={{ 
+                                             left: `${20 + idx * 12}%`, 
+                                             top: `${30 + (idx % 3) * 15}%` 
+                                          }}
+                                       >
+                                          <div className="absolute -top-1 w-2 h-2 -left-0.5 rounded-full bg-brand shadow-[0_0_15px_rgba(232,81,26,0.8)]" />
+                                          <div className="absolute -top-12 left-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all w-32 whitespace-nowrap">
+                                             <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{insight.location}</p>
+                                             <p className="text-xs font-bold">ROI: {insight.yield}%</p>
+                                          </div>
+                                       </motion.div>
+                                    ))}
+                                 </div>
+                              </div>
+                           </div>
+                           <div className="absolute bottom-12 right-12 text-right">
+                              <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.5em] font-mono mb-2">GIS_CORE_V4.2</p>
+                              <h3 className="text-3xl font-bold tracking-tighter text-zinc-800">ALTO MINHO ANALYTICS</h3>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="lg:col-span-4 space-y-8">
+                     <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-zinc-950/40">
+                        <div className="flex items-center gap-3 mb-8">
+                           <BarChart3 className="text-brand" size={18} />
+                           <h3 className="text-xs font-bold uppercase tracking-[0.2em] font-mono">Ranking de Rentabilidade</h3>
+                        </div>
+                        <div className="space-y-6">
+                           {INVESTMENT_INSIGHTS.map((insight) => (
+                              <div key={insight.location} className="flex items-center justify-between group cursor-pointer">
+                                 <div>
+                                    <p className="text-sm font-bold">{insight.location}</p>
+                                    <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-mono mt-0.5">Forecast: +{insight.forecast}%</p>
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-lg font-bold text-brand">{insight.score}</p>
+                                    <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden mt-1">
+                                       <div className="h-full bg-brand" style={{ width: `${insight.score}%` }} />
                                     </div>
                                  </div>
-                              </td>
-                              <td className="p-8">
-                                 <span className="text-[9px] font-bold uppercase py-1 px-3 rounded-full border border-white/5 bg-white/5 text-zinc-400">
-                                    {lead.status}
-                                 </span>
-                              </td>
-                              <td className="p-8">
-                                 <div className="flex flex-col gap-2">
-                                    <div className="flex items-center justify-between text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
-                                       <span>Probabilidade</span>
-                                       <span>{lead.probability}%</span>
-                                    </div>
-                                    <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
-                                       <div className="h-full bg-brand" style={{ width: `${lead.probability}%` }} />
-                                    </div>
-                                 </div>
-                              </td>
-                              <td className="p-8">
-                                 <span className="text-lg font-bold text-white">€{(lead.value/1000).toFixed(0)}k</span>
-                              </td>
-                              <td className="p-8">
-                                 <button 
-                                   onClick={() => { setSelectedLeadId(lead.id); setIsChatOpen(true); }}
-                                   className="p-3 bg-white/5 border border-white/5 rounded-xl text-zinc-500 hover:text-brand hover:border-brand/20 transition-all"
-                                 >
-                                    <MessageSquare size={16} />
-                                 </button>
-                              </td>
-                           </tr>
-                        ))}
-                     </tbody>
-                  </table>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+
+                     <div className="glass p-8 rounded-[2.5rem] border border-white/5 bg-dashboard-bg relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+                        <div className="absolute top-0 right-0 p-8 opacity-5">
+                           <Globe size={180} />
+                        </div>
+                        <div className="relative z-10">
+                           <h4 className="text-lg font-bold mb-2">Oportunidades Globais</h4>
+                           <p className="text-xs text-zinc-500 leading-relaxed font-light">
+                              A IA Fox River está a monitorizar fluxos de investimento estrangeiro (Golden Visas D2/D7) com destino ao Norte de Portugal.
+                           </p>
+                        </div>
+                        <div className="relative z-10 pt-10">
+                           <button className="w-full py-4 bg-zinc-900 border border-white/5 rounded-2xl flex items-center justify-center gap-3 group hover:bg-zinc-800 transition-all">
+                              <span className="text-[10px] font-bold uppercase tracking-widest">Relatório de Migração</span>
+                              <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               {/* HOT DEALS SECTION */}
+               <div className="space-y-8">
+                  <div className="flex items-center justify-between">
+                     <h3 className="text-3xl font-bold tracking-tight">Hot Deals: Under Market Value</h3>
+                     <div className="px-4 py-1.5 bg-red-500/10 text-red-500 rounded-full border border-red-500/20 text-[10px] font-bold flex items-center gap-2">
+                        <TrendingDown size={14} />
+                        DETETADAS OPORTUNIDADES ABAIXO DE 20% DO VALOR KVM
+                     </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     {HOT_DEALS.map(deal => (
+                        <div key={deal.id} className="glass-premium p-10 rounded-[3rem] border border-white/5 bg-dashboard-bg group hover:border-brand/20 transition-all cursor-pointer">
+                           <div className="flex items-center justify-between mb-8">
+                              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-brand">
+                                 <Zap size={20} />
+                              </div>
+                              <div className="text-right">
+                                 <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest font-mono">Discount vs Market</span>
+                                 <p className="text-2xl font-bold text-white">-{deal.discount}%</p>
+                              </div>
+                           </div>
+
+                           <div className="space-y-2 mb-10">
+                              <p className="text-[10px] font-bold text-brand uppercase tracking-widest font-mono">{deal.location}</p>
+                              <h4 className="text-2xl font-bold tracking-tight">{deal.title}</h4>
+                           </div>
+
+                           <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/5">
+                              <div>
+                                 <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Preço Alvo</p>
+                                 <p className="text-lg font-bold">€{(deal.price/1000).toFixed(0)}k</p>
+                              </div>
+                              <div>
+                                 <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1">ROI Est.</p>
+                                 <p className="text-lg font-bold text-green-500">{deal.estRoi}%</p>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Score IA</p>
+                                 <p className="text-lg font-bold text-brand">{deal.investorScore}/100</p>
+                              </div>
+                           </div>
+
+                           <button className="w-full mt-10 py-5 bg-white text-black rounded-[2rem] text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-brand hover:text-white transition-all group-hover:scale-[1.02]">
+                              Analisar Business Plan
+                              <ArrowUpRight size={18} />
+                           </button>
+                        </div>
+                     ))}
+                  </div>
                </div>
             </div>
           )}
+
 
           {activeTab === 'settings' && (
             <div className="max-w-5xl space-y-8 pb-10">
@@ -1416,6 +1604,15 @@ function SidebarContent({
           onClick={() => handleTabChange('leads')}
           icon={<Target size={18} />}
           label="Leads & Pipeline"
+        />
+
+        <div className="h-px bg-white/5 my-4" />
+
+        <NavItem 
+          active={activeTab === 'investor'} 
+          onClick={() => handleTabChange('investor')}
+          icon={<Globe size={18} />}
+          label="Investor Mode (PRO)"
         />
 
         <div className="pt-8 space-y-2">

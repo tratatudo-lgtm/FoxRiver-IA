@@ -1,23 +1,38 @@
-export type LeadType = 'comprador' | 'vendedor' | 'angariador' | 'negócio' | 'crédito' | 'recruta';
+export type LeadType = 'comprador' | 'vendedor' | 'angariador' | 'negócio' | 'crédito' | 'recruta' | 'investor';
 
-export type LeadOrigin = 'Instagram' | 'Facebook' | 'WhatsApp' | 'Internal' | 'Bank';
+export type LeadOrigin = 'Instagram' | 'Facebook' | 'WhatsApp' | 'Internal' | 'Bank' | 'Investor Portal';
+
+export interface InvestmentInsight {
+  location: string;
+  score: number;
+  yield: number;
+  demand: 'High' | 'Medium' | 'Low';
+  forecast: number; // % valuation forecast for next 24m
+}
+
+export interface HotDeal extends Property {
+  discount: number;
+  estRoi: number;
+  investorScore: number;
+}
 
 export type LeadStatus = 
   | 'fria' | 'morna' | 'quente'            // Compradores
   | 'novo' | 'avaliação' | 'angariado'     // Vendedores
   | 'análise' | 'pré-aprovado' | 'escritura' // Crédito / Negócios
-  | 'candidato' | 'entrevista' | 'contratado';
+  | 'candidato' | 'entrevista' | 'contratado'
+  | 'viabilidade' | 'execução';
 
 export type ScoreLabel = '🔥 quente' | '⚠️ morna' | '❄️ fria' | '💎 elite';
 
-export type PropertyStatus = 'disponível' | 'em negociação' | 'reservado' | 'vendido';
+export type PropertyStatus = 'disponível' | 'em negociação' | 'reservado' | 'vendido' | 'oportunidade';
 export type PropertyType = 'Apartamento' | 'Moradia' | 'Terreno' | 'Comercial';
 
 export interface Property {
   id: string;
   title: string;
   type: PropertyType;
-  location: 'Braga' | 'Viana do Castelo' | 'Caminha' | 'Valença' | 'Monção';
+  location: string;
   price: number;
   status: PropertyStatus;
   sqm: number;
@@ -66,7 +81,8 @@ export const STATUS_MAP: Record<LeadType, LeadStatus[]> = {
   'crédito': ['análise', 'pré-aprovado', 'escritura'],
   'negócio': ['análise', 'pré-aprovado', 'escritura'],
   'angariador': ['candidato', 'entrevista', 'contratado'],
-  'recruta': ['candidato', 'entrevista', 'contratado']
+  'recruta': ['candidato', 'entrevista', 'contratado'],
+  'investor': ['análise', 'viabilidade', 'execução']
 };
 
 export interface ChatMessage {
